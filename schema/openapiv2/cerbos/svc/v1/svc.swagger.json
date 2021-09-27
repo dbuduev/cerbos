@@ -1475,6 +1475,12 @@
           "items": {
             "$ref": "#/definitions/v1ResourceRule"
           }
+        },
+        "aliases": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     },
