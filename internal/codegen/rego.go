@@ -60,7 +60,7 @@ type RegoGen struct {
 	*strings.Builder
 	condCount  uint
 	conditions map[string]*CELCondition
-	aliases    map[string]string // CEL variables
+	globals    map[string]string // CEL variables
 }
 
 func NewRegoGen(packageName string, imports ...string) *RegoGen {
@@ -300,7 +300,7 @@ func (rg *RegoGen) addScript(parent, script string) error {
 }
 
 func (rg *RegoGen) addMatch(parent string, m *policyv1.Match) error {
-	cond, err := GenerateCELCondition(parent, m, rg.aliases)
+	cond, err := GenerateCELCondition(parent, m, rg.globals)
 	if err != nil {
 		return err
 	}
@@ -334,6 +334,6 @@ func (rg *RegoGen) addEffectStringFunc(defaultEffect string) {
 	rg.line()
 }
 
-func (rg *RegoGen) AddAliases(aliases map[string]string) {
-	rg.aliases = aliases
+func (rg *RegoGen) AddAliases(globals map[string]string) {
+	rg.globals = globals
 }
