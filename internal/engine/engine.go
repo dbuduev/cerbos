@@ -8,12 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net/http"
 	"os"
 	"sync/atomic"
 	"time"
 
-	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -28,7 +26,6 @@ import (
 	"github.com/cerbos/cerbos/internal/engine/tracer"
 	"github.com/cerbos/cerbos/internal/namer"
 	"github.com/cerbos/cerbos/internal/observability/logging"
-	"github.com/cerbos/cerbos/internal/observability/tracing"
 	"github.com/cerbos/cerbos/internal/schema"
 )
 
@@ -172,8 +169,8 @@ func (engine *Engine) submitWork(ctx context.Context, work workIn) error {
 
 func (engine *Engine) Check(ctx context.Context, inputs []*enginev1.CheckInput, opts ...CheckOpt) ([]*enginev1.CheckOutput, error) {
 	outputs, err := measureCheckLatency(len(inputs), func() ([]*enginev1.CheckOutput, error) {
-		ctx, span := tracing.StartSpan(ctx, "engine.Check")
-		defer span.End()
+		//ctx, span := tracing.StartSpan(ctx, "engine.Check")
+		//defer span.End()
 
 		checkOpts := newCheckOptions(ctx, opts...)
 
@@ -353,14 +350,14 @@ func normaliseFilter(filter *responsev1.ResourcesQueryPlanResponse_Filter) {
 }
 
 func (engine *Engine) evaluate(ctx context.Context, input *enginev1.CheckInput, checkOpts *checkOptions) (*enginev1.CheckOutput, error) {
-	ctx, span := tracing.StartSpan(ctx, "engine.Evaluate")
-	defer span.End()
+	//ctx, span := tracing.StartSpan(ctx, "engine.Evaluate")
+	//defer span.End()
 
-	span.SetAttributes(tracing.RequestID(input.RequestId), tracing.ReqResourceID(input.Resource.Id))
+	//span.SetAttributes(tracing.RequestID(input.RequestId), tracing.ReqResourceID(input.Resource.Id))
 
 	// exit early if the context is cancelled
 	if err := ctx.Err(); err != nil {
-		tracing.MarkFailed(span, http.StatusRequestTimeout, err)
+		//tracing.MarkFailed(span, http.StatusRequestTimeout, err)
 		return nil, err
 	}
 
@@ -491,13 +488,13 @@ func (ec *evaluationCtx) addCheck(eval Evaluator) {
 }
 
 func (ec *evaluationCtx) evaluate(ctx context.Context, input *enginev1.CheckInput, checkOpts *checkOptions) (*evaluationResult, error) {
-	ctx, span := tracing.StartSpan(ctx, "engine.EvalCtxEvaluate")
-	defer span.End()
+	//ctx, span := tracing.StartSpan(ctx, "engine.EvalCtxEvaluate")
+	//defer span.End()
 
 	tctx := tracer.Start(checkOpts.tracerSink)
 
 	if ec.numChecks == 0 {
-		tracing.MarkFailed(span, trace.StatusCodeNotFound, ErrNoPoliciesMatched)
+		//tracing.MarkFailed(span, trace.StatusCodeNotFound, ErrNoPoliciesMatched)
 
 		return nil, ErrNoPoliciesMatched
 	}
@@ -510,7 +507,7 @@ func (ec *evaluationCtx) evaluate(ctx context.Context, input *enginev1.CheckInpu
 		result, err := c.Evaluate(ctx, tctx, input)
 		if err != nil {
 			logging.FromContext(ctx).Error("Failed to evaluate policy", zap.Error(err))
-			tracing.MarkFailed(span, trace.StatusCodeInternal, err)
+			//tracing.MarkFailed(span, trace.StatusCodeInternal, err)
 
 			return nil, fmt.Errorf("failed to execute policy: %w", err)
 		}
@@ -521,7 +518,7 @@ func (ec *evaluationCtx) evaluate(ctx context.Context, input *enginev1.CheckInpu
 		}
 	}
 
-	tracing.MarkFailed(span, trace.StatusCodeNotFound, ErrNoPoliciesMatched)
+	//tracing.MarkFailed(span, trace.StatusCodeNotFound, ErrNoPoliciesMatched)
 
 	return resp, ErrNoPoliciesMatched
 }

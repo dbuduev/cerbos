@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/bluele/gcache"
-	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/tidwall/gjson"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -26,7 +26,6 @@ import (
 	privatev1 "github.com/cerbos/cerbos/api/genpb/cerbos/private/v1"
 	"github.com/cerbos/cerbos/internal/observability/logging"
 	"github.com/cerbos/cerbos/internal/observability/metrics"
-	"github.com/cerbos/cerbos/internal/observability/tracing"
 	"github.com/cerbos/cerbos/internal/storage"
 	"github.com/cerbos/cerbos/internal/util"
 )
@@ -117,8 +116,8 @@ func (m *manager) Validate(ctx context.Context, schemas *policyv1.Schemas, input
 		return result, nil
 	}
 
-	ctx, span := tracing.StartSpan(ctx, "schema.Validate")
-	defer span.End()
+	//ctx, span := tracing.StartSpan(ctx, "schema.Validate")
+	//defer span.End()
 
 	if err := m.validateAttr(ctx, ErrSourcePrincipal, schemas.PrincipalSchema, input.Principal.Attr, input.Actions); err != nil {
 		var principalErrs ValidationErrorList

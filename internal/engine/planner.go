@@ -17,7 +17,6 @@ import (
 	enginev1 "github.com/cerbos/cerbos/api/genpb/cerbos/engine/v1"
 	runtimev1 "github.com/cerbos/cerbos/api/genpb/cerbos/runtime/v1"
 	"github.com/cerbos/cerbos/internal/conditions"
-	"github.com/cerbos/cerbos/internal/observability/tracing"
 	"github.com/cerbos/cerbos/internal/util"
 )
 
@@ -40,9 +39,9 @@ func (e *NoSuchKeyError) Error() string {
 }
 
 func (ppe *principalPolicyEvaluator) EvaluateResourcesQueryPlan(ctx context.Context, input *enginev1.ResourcesQueryPlanRequest) (*enginev1.ResourcesQueryPlanOutput, error) {
-	_, span := tracing.StartSpan(ctx, "principal_policy.EvaluateResourcesQueryPlan")
-	span.SetAttributes(tracing.PolicyFQN(ppe.policy.Meta.Fqn))
-	defer span.End()
+	//_, span := tracing.StartSpan(ctx, "principal_policy.EvaluateResourcesQueryPlan")
+	//span.SetAttributes(tracing.PolicyFQN(ppe.policy.Meta.Fqn))
+	//defer span.End()
 
 	inputActions := []string{input.Action}
 	result := &enginev1.ResourcesQueryPlanOutput{}
@@ -96,9 +95,9 @@ func (ppe *principalPolicyEvaluator) EvaluateResourcesQueryPlan(ctx context.Cont
 }
 
 func (rpe *resourcePolicyEvaluator) EvaluateResourcesQueryPlan(ctx context.Context, input *enginev1.ResourcesQueryPlanRequest) (*enginev1.ResourcesQueryPlanOutput, error) {
-	_, span := tracing.StartSpan(ctx, "resource_policy.EvaluateResourcesQueryPlan")
-	span.SetAttributes(tracing.PolicyFQN(rpe.policy.Meta.Fqn))
-	defer span.End()
+	//_, span := tracing.StartSpan(ctx, "resource_policy.EvaluateResourcesQueryPlan")
+	//span.SetAttributes(tracing.PolicyFQN(rpe.policy.Meta.Fqn))
+	//defer span.End()
 
 	effectiveRoles := toSet(input.Principal.Roles)
 	inputActions := []string{input.Action}

@@ -21,7 +21,6 @@ import (
 	"github.com/cerbos/cerbos/internal/conditions"
 	"github.com/cerbos/cerbos/internal/engine/tracer"
 	"github.com/cerbos/cerbos/internal/namer"
-	"github.com/cerbos/cerbos/internal/observability/tracing"
 	"github.com/cerbos/cerbos/internal/schema"
 	"github.com/cerbos/cerbos/internal/util"
 )
@@ -60,9 +59,9 @@ type resourcePolicyEvaluator struct {
 }
 
 func (rpe *resourcePolicyEvaluator) Evaluate(ctx context.Context, tctx tracer.Context, input *enginev1.CheckInput) (*PolicyEvalResult, error) {
-	_, span := tracing.StartSpan(ctx, "resource_policy.Evaluate")
-	span.SetAttributes(tracing.PolicyFQN(rpe.policy.Meta.Fqn))
-	defer span.End()
+	//_, span := tracing.StartSpan(ctx, "resource_policy.Evaluate")
+	//span.SetAttributes(tracing.PolicyFQN(rpe.policy.Meta.Fqn))
+	//defer span.End()
 
 	policyKey := namer.PolicyKeyFromFQN(rpe.policy.Meta.Fqn)
 	result := newEvalResult(input.Actions)
@@ -187,9 +186,9 @@ type principalPolicyEvaluator struct {
 }
 
 func (ppe *principalPolicyEvaluator) Evaluate(ctx context.Context, tctx tracer.Context, input *enginev1.CheckInput) (*PolicyEvalResult, error) {
-	_, span := tracing.StartSpan(ctx, "principal_policy.Evaluate")
-	span.SetAttributes(tracing.PolicyFQN(ppe.policy.Meta.Fqn))
-	defer span.End()
+	//_, span := tracing.StartSpan(ctx, "principal_policy.Evaluate")
+	//span.SetAttributes(tracing.PolicyFQN(ppe.policy.Meta.Fqn))
+	//defer span.End()
 
 	policyKey := namer.PolicyKeyFromFQN(ppe.policy.Meta.Fqn)
 	result := newEvalResult(input.Actions)
