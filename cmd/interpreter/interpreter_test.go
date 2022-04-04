@@ -17,7 +17,7 @@ import (
 //go:embed testdata/rps.yaml
 var rpsBytes []byte
 
-//go:embed testdata/input.json
+//go:embed testdata/test.json
 var inputBytes []byte
 
 func TestInterpreter(t *testing.T) {
