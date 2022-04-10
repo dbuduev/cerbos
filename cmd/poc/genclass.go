@@ -7,6 +7,7 @@ import (
 	"io"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
+	"unicode"
 )
 
 type AttrType int
@@ -117,11 +118,20 @@ func (a ClassAttr) Equal(b ClassAttr) bool {
 func SaveAsClass(w io.Writer, name string, s *jsonschema.Schema) {
 	fmt.Fprintf(w, "class %s {\n", name)
 
+	inn := make(map[string]*jsonschema.Schema) // "inner" classes
 	props := maps.Keys(s.Properties)
 	slices.Sort(props)
 	for _, n := range props {
-		t := s.Properties[n]
-		fmt.Fprintf(w, "  %s: %s", n, t.Types[0])
+		t := s.Properties[n].Types[0]
+		if t == "object" {
+			cls := fmt.Sprintf("%s%c%s", name, unicode.ToTitle(rune(n[0])), n[1:])
+			fmt.Fprintf(w, "  %s: %s", n, cls)
+			inn[cls] = s.Properties[n]
+		} else if t == "array" {
+			fmt.Fprintf(w, "  %s: Array<%s>", n, s.Properties[n].Items2020.Types[0])
+		} else {
+			fmt.Fprintf(w, "  %s: %s", n, t)
+		}
 		for _, n2 := range s.Required {
 			if n == n2 {
 				fmt.Fprintf(w, " | null")
@@ -131,4 +141,9 @@ func SaveAsClass(w io.Writer, name string, s *jsonschema.Schema) {
 		fmt.Fprintf(w, ";\n")
 	}
 	fmt.Fprintf(w, "}\n")
+
+	for n, s2 := range inn {
+		fmt.Fprintln(w)
+		SaveAsClass(w, n, s2)
+	}
 }

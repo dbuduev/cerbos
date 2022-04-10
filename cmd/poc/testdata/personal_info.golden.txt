@@ -1,0 +1,12 @@
+class PersonalInfo {
+  address: PersonalInfoAddress;
+  first_name: string;
+  last_name: string;
+  phones: Array<string>;
+}
+
+class PersonalInfoAddress {
+  city: string;
+  state: string;
+  street_address: string;
+}

@@ -41,13 +41,27 @@ func TestNewClass(t *testing.T) {
 }
 
 func TestSaveAsClass(t *testing.T) {
-	is := require.New(t)
 	compile := getCompileFunc(t)
-	sch := compile("address.json")
-	sb := new(strings.Builder)
-	SaveAsClass(sb, "Address", sch)
+	t.Run("address", func(t *testing.T) {
+		is := require.New(t)
 
-	dat, err := os.ReadFile("./testdata/address.golden.txt")
-	is.NoError(err)
-	is.Equal(string(dat), sb.String())
+		sch := compile("address.json")
+		sb := new(strings.Builder)
+		SaveAsClass(sb, "Address", sch)
+
+		dat, err := os.ReadFile("./testdata/address.golden.txt")
+		is.NoError(err)
+		is.Equal(string(dat), sb.String())
+	})
+	t.Run("personal_info", func(t *testing.T) {
+		is := require.New(t)
+
+		sch := compile("personal_info.json")
+		sb := new(strings.Builder)
+		SaveAsClass(sb, "PersonalInfo", sch)
+
+		dat, err := os.ReadFile("./testdata/personal_info.golden.txt")
+		is.NoError(err)
+		is.Equal(string(dat), sb.String())
+	})
 }
