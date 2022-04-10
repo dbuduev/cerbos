@@ -1,1 +1,5 @@
-package poc
+package main
+
+func main() {
+
+}

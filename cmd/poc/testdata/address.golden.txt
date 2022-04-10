@@ -1,0 +1,5 @@
+class Address {
+  city: string | null;
+  state: string | null;
+  street_address: string | null;
+}

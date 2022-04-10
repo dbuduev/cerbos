@@ -5,6 +5,8 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"path"
 	"github.com/stretchr/testify/require"
+	"strings"
+	"os"
 )
 
 func getCompileFunc(t *testing.T) func(s string) *jsonschema.Schema {
@@ -17,7 +19,7 @@ func getCompileFunc(t *testing.T) func(s string) *jsonschema.Schema {
 func TestNewClass(t *testing.T) {
 	is := require.New(t)
 	compile := getCompileFunc(t)
-	t.Run("address.json", func(t *testing.T) {
+	t.Run("address", func(t *testing.T) {
 		sch := compile("address.json")
 		cl, err := NewClass("Address", sch)
 		is.NoError(err)
@@ -30,4 +32,22 @@ func TestNewClass(t *testing.T) {
 			},
 		}))
 	})
+
+	t.Run("complex_object", func(t *testing.T) {
+		sch := compile("complex_object.json")
+		_, err := NewClass("ComplexObject", sch)
+		is.NoError(err)
+	})
+}
+
+func TestSaveAsClass(t *testing.T) {
+	is := require.New(t)
+	compile := getCompileFunc(t)
+	sch := compile("address.json")
+	sb := new(strings.Builder)
+	SaveAsClass(sb, "Address", sch)
+
+	dat, err := os.ReadFile("./testdata/address.golden.txt")
+	is.NoError(err)
+	is.Equal(string(dat), sb.String())
 }

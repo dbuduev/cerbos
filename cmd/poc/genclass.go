@@ -4,6 +4,9 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"errors"
 	"fmt"
+	"io"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 type AttrType int
@@ -14,6 +17,8 @@ const (
 	Number
 	String
 	Object
+	Array
+	Boolean
 )
 
 type ClassAttr struct {
@@ -109,3 +114,21 @@ func (a ClassAttr) Equal(b ClassAttr) bool {
 	return true
 }
 
+func SaveAsClass(w io.Writer, name string, s *jsonschema.Schema) {
+	fmt.Fprintf(w, "class %s {\n", name)
+
+	props := maps.Keys(s.Properties)
+	slices.Sort(props)
+	for _, n := range props {
+		t := s.Properties[n]
+		fmt.Fprintf(w, "  %s: %s", n, t.Types[0])
+		for _, n2 := range s.Required {
+			if n == n2 {
+				fmt.Fprintf(w, " | null")
+				break
+			}
+		}
+		fmt.Fprintf(w, ";\n")
+	}
+	fmt.Fprintf(w, "}\n")
+}
