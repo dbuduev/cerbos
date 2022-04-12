@@ -7,6 +7,46 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+const (
+	rolesMatched = `
+function rolesMatched(a: Array<string>, b: Array<string>): boolean {
+  for (let i = 0; i < a.length; i++) {
+    for (let j = 0; j < b.length; j++) {
+      if (a[i] == b[j]) {
+        return true
+      }
+    }
+  }
+  return false
+}
+`
+	actionsMatched = `
+function matchGlob(a: string, g: string): boolean {
+  const ps = g.split(":");
+  const as = a.split(":");
+  if (ps.length != as.length) {
+    return false;
+  }
+  for (let i = 0; i < ps.length; i++) {
+    if (ps[i] != "*" && ps[i] != as[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function actionsMatched(a: string, globs: Array<string>): boolean {
+  let result = false;
+
+  for (let i = 0; i < globs.length && !result; i++) {
+    result = matchGlob(a, globs[i])
+  }
+
+  return result;
+}
+`
+)
+
 func Save(w io.Writer, rps *runtimev1.RunnableResourcePolicySet) {
 	indent := 0
 	f0 := func(format string, a ...any) {
@@ -18,6 +58,8 @@ func Save(w io.Writer, rps *runtimev1.RunnableResourcePolicySet) {
 		}
 		fmt.Fprintf(w, format, a...)
 	}
+	f(rolesMatched)
+	f(actionsMatched)
 	f("\nexport function check(request: Request): string {")
 	f(`
   let actions : Array<string>;
