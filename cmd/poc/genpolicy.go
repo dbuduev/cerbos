@@ -20,7 +20,7 @@ function rolesMatched(a: Array<string>, b: Array<string>): boolean {
   return false
 }
 `
-	actionsMatched = `
+	actionMatched = `
 function matchGlob(a: string, g: string): boolean {
   const ps = g.split(":");
   const as = a.split(":");
@@ -35,7 +35,7 @@ function matchGlob(a: string, g: string): boolean {
   return true;
 }
 
-export function actionsMatched(a: string, globs: Array<string>): boolean {
+export function actionMatched(a: string, globs: Array<string>): boolean {
   let result = false;
 
   for (let i = 0; i < globs.length && !result; i++) {
@@ -59,7 +59,7 @@ func Save(w io.Writer, rps *runtimev1.RunnableResourcePolicySet) {
 		fmt.Fprintf(w, format, a...)
 	}
 	f(rolesMatched)
-	f(actionsMatched)
+	f(actionMatched)
 	f("\nexport function check(request: Request): string {")
 	f(`
   let actions : Array<string>;
@@ -81,7 +81,7 @@ func Save(w io.Writer, rps *runtimev1.RunnableResourcePolicySet) {
 		f("  actions = [")
 		csv(w, "%q", maps.Keys(r.Actions))
 		f0("];\n")
-		f("  if(actionsMatched(request.action, actions)) {\n")
+		f("  if(actionMatched(request.action, actions)) {\n")
 		indent++
 		if r.Condition == nil {
 			f("    return %q;\n", r.Effect.String())
