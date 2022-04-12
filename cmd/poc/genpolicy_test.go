@@ -9,6 +9,8 @@ import (
 	"context"
 	"path/filepath"
 	"runtime"
+	"github.com/cerbos/cerbos/internal/namer"
+	"strings"
 )
 
 func pathToDir(tb testing.TB, dir string) string {
@@ -44,4 +46,20 @@ func TestNewCompiler(t *testing.T) {
 	is := require.New(t)
 
 	is.NotNil(mkCompiler(t))
+}
+
+func TestGetPolicy(t *testing.T) {
+	resource, policyVer, scope := "leave_request", "staging", ""
+	resourceModID := namer.ResourcePolicyModuleID(resource, policyVer, scope)
+	compiler := mkCompiler(t)
+	ctx := context.Background()
+	rps, err := compiler.Get(ctx, resourceModID)
+	is := require.New(t)
+	is.NoError(err)
+	is.NotNil(rps)
+	is.NotNil(rps.GetResourcePolicy())
+
+	sb := new(strings.Builder)
+	Save(sb, rps.GetResourcePolicy())
+	t.Log(sb.String())
 }
