@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/bluele/gcache"
-	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/tidwall/gjson"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -52,6 +52,7 @@ func (vr *ValidationResult) add(errs ...ValidationError) {
 type Manager interface {
 	Validate(context.Context, *policyv1.Schemas, *enginev1.CheckInput) (*ValidationResult, error)
 	CheckSchema(context.Context, string) error
+	LoadSchema(ctx context.Context, url string) (*jsonschema.Schema, error)
 }
 
 type Loader interface {
@@ -64,6 +65,10 @@ func NewNopManager() NopManager {
 }
 
 type NopManager struct{}
+
+func (m NopManager) LoadSchema(ctx context.Context, url string) (*jsonschema.Schema, error) {
+	return nil, nil
+}
 
 func (NopManager) Validate(_ context.Context, _ *policyv1.Schemas, _ *enginev1.CheckInput) (*ValidationResult, error) {
 	return alwaysValidResult, nil
@@ -107,7 +112,7 @@ func NewFromConf(_ context.Context, loader Loader, conf *Conf) Manager {
 }
 
 func (m *manager) CheckSchema(ctx context.Context, url string) error {
-	_, err := m.loadSchema(ctx, url)
+	_, err := m.LoadSchema(ctx, url)
 	return err
 }
 
@@ -162,7 +167,7 @@ func (m *manager) validateAttr(ctx context.Context, src ErrSource, schemaRef *po
 		}
 	}
 
-	schema, err := m.loadSchema(ctx, schemaRef.Ref)
+	schema, err := m.LoadSchema(ctx, schemaRef.Ref)
 	if err != nil {
 		m.log.Warn("Failed to load schema", zap.String("schema", schemaRef.Ref), zap.Error(err))
 		return newSchemaLoadErr(src, schemaRef.Ref)
@@ -186,7 +191,7 @@ func (m *manager) validateAttr(ctx context.Context, src ErrSource, schemaRef *po
 	return nil
 }
 
-func (m *manager) loadSchema(ctx context.Context, url string) (*jsonschema.Schema, error) {
+func (m *manager) LoadSchema(ctx context.Context, url string) (*jsonschema.Schema, error) {
 	entry, err := m.cache.GetIFPresent(url)
 	if err == nil {
 		cacheHit()

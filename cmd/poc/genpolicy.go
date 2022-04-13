@@ -48,15 +48,22 @@ export function actionMatched(a: string, globs: Array<string>): boolean {
 )
 
 func Save(w io.Writer, rps *runtimev1.RunnableResourcePolicySet) {
-	indent := 0
-	f0 := func(format string, a ...any) {
-		fmt.Fprintf(w, format, a...)
-	}
-	f := func(format string, a ...any) {
-		for i := 0; i < indent; i++ {
-			fmt.Fprintf(w, "  ")
+	var err error
+	f0 := func(format string, a ...any) { // no indentation
+		if err == nil {
+			fmt.Fprintf(w, format, a...)
 		}
-		fmt.Fprintf(w, format, a...)
+	}
+	indent := 0
+	f := func(format string, a ...any) {
+		if err == nil {
+			for i := 0; i < indent; i++ {
+				_, err = fmt.Fprintf(w, "  ")
+			}
+		}
+		if err == nil {
+			_, err = fmt.Fprintf(w, format, a...)
+		}
 	}
 	f(rolesMatched)
 	f(actionMatched)
@@ -78,16 +85,22 @@ func Save(w io.Writer, rps *runtimev1.RunnableResourcePolicySet) {
 		f("if(rolesMatched(P.roles, roles)) {\n")
 		indent++
 		// actions
-		f("  actions = [")
+		f("actions = [")
 		csv(w, "%q", maps.Keys(r.Actions))
 		f0("];\n")
-		f("  if(actionMatched(request.action, actions)) {\n")
+		f("if(actionMatched(request.action, actions)) {\n")
 		indent++
 		if r.Condition == nil {
-			f("    return %q;\n", r.Effect.String())
+			f("return %q;\n", r.Effect.String())
+		} else {
+			f("if(")
+			saveCondition(w, r.Condition)
+			f0(") {\n")
+			f("return %q;\n", r.Effect.String())
+			f("}\n")
 		}
 		indent--
-		f("  }\n")
+		f("}\n")
 		indent--
 		f("}\n")
 	}
@@ -95,6 +108,32 @@ func Save(w io.Writer, rps *runtimev1.RunnableResourcePolicySet) {
 	f("return \"EFFECT_DENY\";\n")
 	indent--
 	f("}\n")
+}
+
+func saveCondition(w io.Writer, condition *runtimev1.Condition) {
+	f0 := func(format string, a ...any) { // no indentation
+		fmt.Fprintf(w, format, a...)
+	}
+	switch c := condition.Op.(type) {
+	case *runtimev1.Condition_Expr:
+		fmt.Fprintf(w, c.Expr.Original)
+	case *runtimev1.Condition_All:
+		n := len(c.All.Expr)
+		for i := 0; i < n-1; i++ {
+			f0("(")
+			saveCondition(w, c.All.Expr[i])
+			f0(") && ")
+		}
+		if n > 1 {
+			f0("(")
+		}
+		saveCondition(w, c.All.Expr[n-1])
+		if n > 1 {
+			f0(")")
+		}
+	default:
+		panic(fmt.Sprintf(""))
+	}
 }
 
 func csv[T any](w io.Writer, s string, keys []T) {

@@ -115,6 +115,25 @@ func (a ClassAttr) Equal(b ClassAttr) bool {
 	return true
 }
 
+const baseClasses = `
+class Request {
+  requestId: string;
+  action: string;
+  principal: Principal;
+  resource: Resource;
+}
+
+class Principal {
+  id: string;
+  roles: Array<string>;
+  attr: principalAttr;
+}
+
+class Resource {
+  id: string;
+  attr: resourceAttr;
+}`
+
 func SaveAsClass(w io.Writer, name string, s *jsonschema.Schema) {
 	fmt.Fprintf(w, "class %s {\n", name)
 
