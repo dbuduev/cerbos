@@ -96,7 +96,9 @@ func Save(w io.Writer, rps *runtimev1.RunnableResourcePolicySet) {
 			f("if(")
 			saveCondition(w, r.Condition)
 			f0(") {\n")
+			indent++
 			f("return %q;\n", r.Effect.String())
+			indent--
 			f("}\n")
 		}
 		indent--
@@ -116,7 +118,8 @@ func saveCondition(w io.Writer, condition *runtimev1.Condition) {
 	}
 	switch c := condition.Op.(type) {
 	case *runtimev1.Condition_Expr:
-		fmt.Fprintf(w, c.Expr.Original)
+		renderExpr(w, c.Expr.Checked.Expr)
+		//fmt.Fprintf(w, c.Expr.Original)
 	case *runtimev1.Condition_All:
 		n := len(c.All.Expr)
 		for i := 0; i < n-1; i++ {
