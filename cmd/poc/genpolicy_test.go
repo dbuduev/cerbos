@@ -50,7 +50,7 @@ func TestNewCompiler(t *testing.T) {
 	is.NotNil(compiler)
 }
 
-func TestGetPolicy(t *testing.T) {
+func TestGenPolicy(t *testing.T) {
 	resource, policyVer, scope := "leave_request", "staging", ""
 	resourceModID := namer.ResourcePolicyModuleID(resource, policyVer, scope)
 	compiler, schMgr := mkCompiler(t)
