@@ -16,7 +16,7 @@ require (
 	go.elastic.co/go-licence-detector v0.5.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
 	google.golang.org/protobuf v1.27.1
-	gotest.tools/gotestsum v1.7.0
+	gotest.tools/gotestsum v1.8.1
 )
 
 require (
