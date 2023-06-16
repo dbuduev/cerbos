@@ -153,5 +153,6 @@ func newCELEnvOptions() []cel.EnvOption {
 		ext.Encoders(),
 		ext.Math(),
 		CerbosCELLib(),
+		cel.OptionalTypes(),
 	}
 }
