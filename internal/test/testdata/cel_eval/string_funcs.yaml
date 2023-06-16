@@ -2,39 +2,49 @@
 condition:
   all:
     of:
-#      - expr: '"mark"+"eting" == "marketing"'
-#      - expr: '"mark" > "eting"'
-#      - expr: P.attr.department.contains("arket")
-#      - expr: R.attr.department.endsWith("ing")
-#      - expr: int("42") == 42
-#      - expr: P.attr.department.matches("^[mM].*g$")
-#      - expr: size(P.attr.department) == 9
-#      - expr: R.attr.department.startsWith("mark")
-#      - expr: R.attr.department.charAt(1) == 'a'
-#      - expr: R.attr.department.indexOf('a') == 1
-#      - expr: R.attr.department.lastIndexOf('g') == 8
+      - expr: '"mark"+"eting" == "marketing"'
+      - expr: '"mark" > "eting"'
+      - expr: P.attr.department.contains("arket")
+      - expr: R.attr.department.endsWith("ing")
+      - expr: int("42") == 42
+      - expr: P.attr.department.matches("^[mM].*g$")
+      - expr: size(P.attr.department) == 9
+      - expr: R.attr.department.startsWith("mark")
+      - expr: R.attr.department.charAt(1) == 'a'
+      - expr: R.attr.department.indexOf('a') == 1
+      - expr: R.attr.department.lastIndexOf('g') == 8
+      - expr: |-
+          "MARKETING".lowerAscii() == R.attr.department
+      - expr: |-
+          R.attr.department.replace("market", "engineer") == "engineering"
 #      - expr: |-
-#          "MARKETING".lowerAscii() == R.attr.department
-#      - expr: |-
-#          R.attr.department.replace("market", "engineer") == "engineering"
+#          R.attr.?department.optMap(v, v == "marketing")
       - expr: |-
           R.attr.?department == optional.of("marketing")
-#      - expr: |-
-#          "engineering".replace("e", "a", 1) == "angineering" && "engineering".replace("e", "a", -1) == "anginaaring"
-#      - expr: |-
-#          "a,b,c,d".split(",")[1] == "b"
-#      - expr: |-
-#          "a,b,c,d".split(",", 2)[1] == "b,c,d"
-#      - expr: |-
-#          R.attr.department.substring(4) == "eting" && R.attr.department.substring(4, 6) == "et"
-#      - expr: |-
-#          "  marketing  ".trim() == "marketing"
-#      - expr: |-
-#          R.attr.department.upperAscii() == "MARKETING"
-#      - expr: |-
-#          base64.decode("aGVsbG8=") == bytes("hello")
-#      - expr: |-
-#          base64.encode(bytes("hello")) == "aGVsbG8="
+      - expr: |-
+          R.attr[?"department"] == optional.of("marketing")
+      - expr: |-
+          R.attr.?no_such_field != optional.of("marketing")
+      - expr: |-
+          R.attr.?no_such_field == optional.none()
+      - expr: |-
+          !R.attr.?no_such_field.hasValue()
+      - expr: |-
+          "engineering".replace("e", "a", 1) == "angineering" && "engineering".replace("e", "a", -1) == "anginaaring"
+      - expr: |-
+          "a,b,c,d".split(",")[1] == "b"
+      - expr: |-
+          "a,b,c,d".split(",", 2)[1] == "b,c,d"
+      - expr: |-
+          R.attr.department.substring(4) == "eting" && R.attr.department.substring(4, 6) == "et"
+      - expr: |-
+          "  marketing  ".trim() == "marketing"
+      - expr: |-
+          R.attr.department.upperAscii() == "MARKETING"
+      - expr: |-
+          base64.decode("aGVsbG8=") == bytes("hello")
+      - expr: |-
+          base64.encode(bytes("hello")) == "aGVsbG8="
 input: {
   "requestId": "test",
   "actions": ["*"],
