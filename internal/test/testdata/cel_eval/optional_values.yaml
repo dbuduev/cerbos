@@ -13,9 +13,13 @@ condition:
       - expr: |-
           R.attr.?no_such_field == optional.none()
       - expr: |-
+          R.attr.?no_such_field.orValue(0) == 0
+      - expr: |-
           !R.attr.?no_such_field.hasValue()
       - expr: |-
           "a,b,c,d".split(",")[?5] == optional.none()
+      - expr: |-
+          "a,b,c,d".split(",")[?5].orValue("x") == "x"
 input: {
   "requestId": "test",
   "actions": ["*"],

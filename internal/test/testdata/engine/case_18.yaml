@@ -1,0 +1,51 @@
+---
+description: "Optional values test"
+inputs: [
+  {
+    "requestId": "test1",
+    "actions": ["create"],
+    "principal": {
+      "id": "olaf",
+      "roles": ["employee"],
+    },
+    "resource": {
+      "kind": "equipment_request",
+      "id": "XX125",
+      "attr": { "local": true }
+    }
+  },
+  {
+    "requestId": "test2",
+    "actions": ["create"],
+    "principal": {
+      "id": "olaf",
+      "roles": ["employee"],
+    },
+    "resource": {
+      "kind": "equipment_request",
+      "id": "XX125"
+    }
+  }
+]
+wantOutputs: [
+  {
+    "requestId": "test1",
+    "resourceId": "XX125",
+    "actions": {
+      "create": {
+        "effect": "EFFECT_ALLOW",
+        "policy": "principal.olaf.vdefault"
+      }
+    }
+  },
+  {
+    "requestId": "test2",
+    "resourceId": "XX125",
+    "actions": {
+      "create": {
+        "effect": "EFFECT_ALLOW",
+        "policy": "principal.olaf.vdefault"
+      }
+    }
+  }
+]

@@ -1,0 +1,18 @@
+---
+apiVersion: "api.cerbos.dev/v1"
+principalPolicy:
+  principal: olaf
+  version: "default"
+  rules:
+    - resource: equipment_request
+      actions:
+        - name: create-rule
+          action: "create"
+          effect: EFFECT_ALLOW
+          condition:
+            match:
+              all:
+                of:
+                  - expr: R.attr.?local.orValue(true) == true
+                  - expr: R.attr[?"local"].orValue(true) == true # same condition in alt form
+                  - expr: R.attr.?local.hasValue() == false || R.attr.?local == optional.of(true) # same condition in alt form
