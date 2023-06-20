@@ -271,6 +271,21 @@
           operands:
             - variable: optional
 
+"optional.ofNonZeroValue(a.b) == a.?c":
+  expression:
+    operator: eq
+    operands:
+      - expression:
+          operator: ofNonZeroValue
+          operands:
+            - variable: optional
+            - variable: a.b
+      - expression:
+          operator: opt-select
+          operands:
+            - variable: a
+            - value: c
+
 "a && b":
   expression:
     operator: and
