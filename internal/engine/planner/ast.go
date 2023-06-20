@@ -51,6 +51,7 @@ const (
 	ExistsOne          = "exists_one"
 	Map                = "map"
 	Lambda             = "lambda"
+	OptOr              = "opt-or"
 )
 
 var ErrUnknownOperator = errors.New("unknown operator")
@@ -91,6 +92,8 @@ func opFromCLE(fn string) (string, error) {
 		return Not, nil
 	case operators.OptSelect:
 		return OptSelect, nil
+	case "or":
+		return OptOr, nil
 	default:
 		return fn, ErrUnknownOperator
 	}

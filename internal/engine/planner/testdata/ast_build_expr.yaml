@@ -192,6 +192,41 @@
             - value: c
       - variable: b
 
+"a.?c.value()":
+  expression:
+    operator: value
+    operands:
+      - expression:
+          operator: opt-select
+          operands:
+            - variable: a
+            - value: c
+
+"a.?c.or(a.?b)":
+  expression:
+    operator: opt-or
+    operands:
+      - expression:
+          operator: opt-select
+          operands:
+            - variable: a
+            - value: c
+      - expression:
+          operator: opt-select
+          operands:
+            - variable: a
+            - value: b
+
+"a.?c.hasValue()":
+  expression:
+    operator: hasValue
+    operands:
+      - expression:
+          operator: opt-select
+          operands:
+            - variable: a
+            - value: c
+
 "a.?c.orValue(true) && b":
   expression:
     operator: and

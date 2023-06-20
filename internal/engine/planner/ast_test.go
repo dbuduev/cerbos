@@ -60,7 +60,7 @@ func Test_buildExpr(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			is := require.New(t)
 			acc := new(exOp)
-			err := buildExpr(parse(k), acc)
+			err := buildExpr(parse(name), acc)
 			is.NoError(err)
 
 			is.Empty(cmp.Diff(want, acc, protocmp.Transform()), "unexpected expression: %s", protojson.Format(acc))
