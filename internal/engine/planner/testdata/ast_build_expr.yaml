@@ -181,6 +181,61 @@
   expression:
     operator: now
 
+"a.?c && b":
+  expression:
+    operator: and
+    operands:
+      - expression:
+          operator: opt-select
+          operands:
+            - variable: a
+            - value: c
+      - variable: b
+
+"a.?c.orValue(true) && b":
+  expression:
+    operator: and
+    operands:
+      - expression:
+          operator: orValue
+          operands:
+            - expression:
+                operator: opt-select
+                operands:
+                  - variable: a
+                  - value: c
+            - value: true
+      - variable: b
+
+"a.?c == optional.of(true)":
+  expression:
+    operator: eq
+    operands:
+      - expression:
+          operator: opt-select
+          operands:
+            - variable: a
+            - value: c
+      - expression:
+          operator: of
+          operands:
+            - variable: optional
+            - value: true
+
+"a.?c == optional.none()":
+  expression:
+    operator: eq
+    operands:
+      - expression:
+          operator: opt-select
+          operands:
+            - variable: a
+            - value: c
+      - expression:
+          operator: none
+          operands:
+            - variable: optional
+
 "a && b":
   expression:
     operator: and

@@ -43,6 +43,7 @@ const (
 	Mod                = "mod"
 	SetField           = "set-field"
 	GetField           = "get-field"
+	OptSelect          = "opt-select"
 	Index              = "index"
 	All                = "all"
 	Filter             = "filter"
@@ -88,6 +89,8 @@ func opFromCLE(fn string) (string, error) {
 		return Or, nil
 	case operators.LogicalNot:
 		return Not, nil
+	case operators.OptSelect:
+		return OptSelect, nil
 	default:
 		return fn, ErrUnknownOperator
 	}
