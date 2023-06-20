@@ -141,6 +141,7 @@ func newCELQueryPlanEnvOptions() []cel.EnvOption {
 		ext.Encoders(),
 		ext.Math(),
 		CerbosCELLib(),
+		cel.OptionalTypes(),
 	}
 }
 
