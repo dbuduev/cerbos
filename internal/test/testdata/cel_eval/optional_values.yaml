@@ -15,6 +15,10 @@ condition:
       - expr: |-
           R.attr.?no_such_field.orValue(0) == 0
       - expr: |-
+          R.attr.?no_such_field.or(optional.of(0)) == optional.of(0)
+      - expr: |-
+          optional.ofNonZeroValue(0) == optional.none()
+      - expr: |-
           !R.attr.?no_such_field.hasValue()
       - expr: |-
           "a,b,c,d".split(",")[?5] == optional.none()
