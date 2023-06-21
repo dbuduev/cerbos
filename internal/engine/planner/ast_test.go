@@ -7,6 +7,8 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/checker/decls"
 	"testing"
 
 	"github.com/ghodss/yaml"
@@ -48,8 +50,24 @@ func getExpectedExpressions(t *testing.T) map[string]*exOp {
 }
 
 func Test_buildExpr(t *testing.T) {
-	parse := func(s string) *exprpb.Expr {
-		ast, iss := conditions.StdEnv.Parse(s)
+	env, err := conditions.StdPartialEnv.Extend(cel.Declarations(
+		decls.NewVar("x", decls.NewListType(decls.Dyn)),
+		decls.NewVar("a", decls.Dyn),
+		decls.NewVar("b", decls.Dyn),
+		decls.NewVar("c", decls.Dyn),
+		decls.NewFunction("f", &exprpb.Decl_FunctionDecl_Overload{
+			Params:             []*exprpb.Type{decls.Dyn, decls.Dyn, decls.Int},
+			ResultType:         decls.Dyn,
+			IsInstanceFunction: true,
+		}, &exprpb.Decl_FunctionDecl_Overload{
+			Params:     []*exprpb.Type{decls.Dyn, decls.Int},
+			ResultType: decls.Dyn,
+		}),
+	))
+	require.NoError(t, err)
+
+	compile := func(t *testing.T, s string) *exprpb.Expr {
+		ast, iss := env.Compile(s)
 		require.Nil(t, iss, iss.Err())
 		return ast.Expr()
 	}
@@ -60,7 +78,7 @@ func Test_buildExpr(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			is := require.New(t)
 			acc := new(exOp)
-			err := buildExpr(parse(name), acc)
+			err := buildExpr(compile(t, name), acc)
 			is.NoError(err)
 
 			is.Empty(cmp.Diff(want, acc, protocmp.Transform()), "unexpected expression: %s", protojson.Format(acc))

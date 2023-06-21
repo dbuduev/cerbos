@@ -102,13 +102,14 @@
                 operator: upperAscii
             - variable: t
 
-"x.f(a,3)":
+"b.f(a,3)":
   expression:
     operands:
-      - variable: x
+      - variable: b
       - variable: a
       - value: 3
     operator: f
+
 "f(a,3)":
   expression:
     operands:
@@ -125,10 +126,10 @@
           operator: index
       - variable: c
     operator: get-field
-"z + [2,3]":
+"x + [2,3]":
       expression:
         operands:
-          - variable: z
+          - variable: x
           - value:
               - 2
               - 3
@@ -181,16 +182,45 @@
   expression:
     operator: now
 
-"a.?c && b":
+"a[?c] && b":
   expression:
     operator: and
     operands:
       - expression:
-          operator: opt-select
+          operator: opt-index
           operands:
             - variable: a
-            - value: c
+            - variable: c
       - variable: b
+
+"a[?11] && b":
+  expression:
+    operator: and
+    operands:
+      - expression:
+          operator: opt-index
+          operands:
+            - variable: a
+            - value: 11
+      - variable: b
+
+"a[?\"k\"] && b":
+  expression:
+    operator: and
+    operands:
+      - expression:
+          operator: opt-index
+          operands:
+            - variable: a
+            - value: k
+      - variable: b
+
+"a.?c":
+  expression:
+    operator: opt-select
+    operands:
+      - variable: a
+      - value: c
 
 "a.?c.value()":
   expression:
@@ -252,9 +282,8 @@
             - variable: a
             - value: c
       - expression:
-          operator: of
+          operator: optional.of
           operands:
-            - variable: optional
             - value: true
 
 "a.?c == optional.none()":
@@ -267,18 +296,15 @@
             - variable: a
             - value: c
       - expression:
-          operator: none
-          operands:
-            - variable: optional
+          operator: optional.none
 
 "optional.ofNonZeroValue(a.b) == a.?c":
   expression:
     operator: eq
     operands:
       - expression:
-          operator: ofNonZeroValue
+          operator: optional.ofNonZeroValue
           operands:
-            - variable: optional
             - variable: a.b
       - expression:
           operator: opt-select
@@ -300,14 +326,14 @@
       - variable: a
       - variable: b
 
-"a in {\"x\": 1, \"z\": 2}":
+"a in {\"b\": 1, \"c\": 2}":
   expression:
     operator: in
     operands:
       - variable: a
-      - value: ["x", "z"]
+      - value: ["b", "c"]
 
-"a in {x: 1, z: 2}":
+"a in {b: 1, c: 2}":
   expression:
     operator: in
     operands:
@@ -315,18 +341,18 @@
       - expression:
           operator: list
           operands:
-            - variable: x
-            - variable: z
+            - variable: b
+            - variable: c
 
-"{x: 1, z: 2}.all(t, t > 0)":
+"{a: 1, b: 2}.all(t, t > 0)":
   expression:
     operator: all
     operands:
       - expression:
           operator: list
           operands:
-            - variable: x
-            - variable: z
+            - variable: a
+            - variable: b
       - expression:
           operator: lambda
           operands:
@@ -336,7 +362,8 @@
                   - variable: t
                   - value: 0
             - variable: t
-"[1, 2, 3].exists(t, x > t)":
+
+"[1, 2, 3].exists(t, a > t)":
   expression:
     operator: exists
     operands:
@@ -347,10 +374,10 @@
             - expression:
                 operator: gt
                 operands:
-                  - variable: x
+                  - variable: a
                   - variable: t
             - variable: t
-"['a', 'b'].exists(t, x.contains(t))":
+"['a', 'b'].exists(t, a.contains(t))":
   expression:
     operator: exists
     operands:
@@ -361,6 +388,6 @@
             - expression:
                 operator: contains
                 operands:
-                  - variable: x
+                  - variable: a
                   - variable: t
             - variable: t

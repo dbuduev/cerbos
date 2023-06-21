@@ -45,6 +45,7 @@ const (
 	GetField           = "get-field"
 	OptSelect          = "opt-select"
 	Index              = "index"
+	OptIndex           = "opt-index"
 	All                = "all"
 	Filter             = "filter"
 	Exists             = "exists"
@@ -94,6 +95,8 @@ func opFromCLE(fn string) (string, error) {
 		return OptSelect, nil
 	case "or":
 		return OptOr, nil
+	case operators.OptIndex:
+		return OptIndex, nil
 	default:
 		return fn, ErrUnknownOperator
 	}
