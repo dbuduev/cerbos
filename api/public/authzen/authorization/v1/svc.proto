@@ -32,7 +32,7 @@ service AuthorizationService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "AuthZEN Authorization Service for access evaluations"};
 
   // Evaluate performs an access evaluation
-  rpc Evaluate(EvaluationRequest) returns (EvaluationResponse) {
+  rpc AccessEvaluation(AccessEvaluationRequest) returns (AccessEvaluationResponse) {
     option (google.api.http) = {
       post: "/access/v1/evaluation"
       body: "*"
@@ -40,7 +40,6 @@ service AuthorizationService {
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Evaluate access request"
       description: "Evaluate whether a subject can perform an action on a resource according to AuthZEN specification"
-      operation_id: "Evaluate"
     };
   }
 }

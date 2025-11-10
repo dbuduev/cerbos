@@ -10,56 +10,56 @@ import (
 
 // HashPB computes a hash of the message using the given hash function
 // The ignore set must contain fully-qualified field names (pkg.msg.field) that should be ignored from the hash
-func (m *EvaluationRequest) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
+func (m *AccessEvaluationRequest) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
 	if m != nil {
-		authzen_authorization_v1_EvaluationRequest_hashpb_sum(m, hasher, ignore)
+		authzen_authorization_v1_AccessEvaluationRequest_hashpb_sum(m, hasher, ignore)
 	}
 }
 
 // HashPB computes a hash of the message using the given hash function
 // The ignore set must contain fully-qualified field names (pkg.msg.field) that should be ignored from the hash
-func (m *EvaluationRequest_Subject) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
+func (m *AccessEvaluationRequest_Subject) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
 	if m != nil {
-		authzen_authorization_v1_EvaluationRequest_Subject_hashpb_sum(m, hasher, ignore)
+		authzen_authorization_v1_AccessEvaluationRequest_Subject_hashpb_sum(m, hasher, ignore)
 	}
 }
 
 // HashPB computes a hash of the message using the given hash function
 // The ignore set must contain fully-qualified field names (pkg.msg.field) that should be ignored from the hash
-func (m *EvaluationRequest_Resource) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
+func (m *AccessEvaluationRequest_Resource) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
 	if m != nil {
-		authzen_authorization_v1_EvaluationRequest_Resource_hashpb_sum(m, hasher, ignore)
+		authzen_authorization_v1_AccessEvaluationRequest_Resource_hashpb_sum(m, hasher, ignore)
 	}
 }
 
 // HashPB computes a hash of the message using the given hash function
 // The ignore set must contain fully-qualified field names (pkg.msg.field) that should be ignored from the hash
-func (m *EvaluationRequest_Action) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
+func (m *AccessEvaluationRequest_Action) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
 	if m != nil {
-		authzen_authorization_v1_EvaluationRequest_Action_hashpb_sum(m, hasher, ignore)
+		authzen_authorization_v1_AccessEvaluationRequest_Action_hashpb_sum(m, hasher, ignore)
 	}
 }
 
 // HashPB computes a hash of the message using the given hash function
 // The ignore set must contain fully-qualified field names (pkg.msg.field) that should be ignored from the hash
-func (m *EvaluationResponse) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
+func (m *AccessEvaluationResponse) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
 	if m != nil {
-		authzen_authorization_v1_EvaluationResponse_hashpb_sum(m, hasher, ignore)
+		authzen_authorization_v1_AccessEvaluationResponse_hashpb_sum(m, hasher, ignore)
 	}
 }
 
 // HashPB computes a hash of the message using the given hash function
 // The ignore set must contain fully-qualified field names (pkg.msg.field) that should be ignored from the hash
-func (m *EvaluationResponse_Context) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
+func (m *AccessEvaluationResponse_Context) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
 	if m != nil {
-		authzen_authorization_v1_EvaluationResponse_Context_hashpb_sum(m, hasher, ignore)
+		authzen_authorization_v1_AccessEvaluationResponse_Context_hashpb_sum(m, hasher, ignore)
 	}
 }
 
 // HashPB computes a hash of the message using the given hash function
 // The ignore set must contain fully-qualified field names (pkg.msg.field) that should be ignored from the hash
-func (m *EvaluationResponse_Context_Reason) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
+func (m *AccessEvaluationResponse_Context_Reason) HashPB(hasher hash.Hash, ignore map[string]struct{}) {
 	if m != nil {
-		authzen_authorization_v1_EvaluationResponse_Context_Reason_hashpb_sum(m, hasher, ignore)
+		authzen_authorization_v1_AccessEvaluationResponse_Context_Reason_hashpb_sum(m, hasher, ignore)
 	}
 }

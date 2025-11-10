@@ -29,12 +29,12 @@
       "post": {
         "summary": "Evaluate access request",
         "description": "Evaluate whether a subject can perform an action on a resource according to AuthZEN specification",
-        "operationId": "Evaluate",
+        "operationId": "AuthorizationService_AccessEvaluation",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1EvaluationResponse"
+              "$ref": "#/definitions/v1AccessEvaluationResponse"
             }
           },
           "default": {
@@ -51,7 +51,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v1EvaluationRequest"
+              "$ref": "#/definitions/v1AccessEvaluationRequest"
             }
           }
         ],
@@ -62,23 +62,7 @@
     }
   },
   "definitions": {
-    "ContextReason": {
-      "type": "object",
-      "properties": {
-        "properties": {
-          "type": "object",
-          "example": {
-            "policy": "resource.expense.v1",
-            "rule": "owner_access"
-          },
-          "additionalProperties": {},
-          "description": "Key-value pairs providing reason details."
-        }
-      },
-      "description": "Reason for the access decision",
-      "title": "Reason provides explanation for administrative or user-facing purposes"
-    },
-    "EvaluationRequestAction": {
+    "AccessEvaluationRequestAction": {
       "type": "object",
       "properties": {
         "name": {
@@ -101,7 +85,7 @@
         "name"
       ]
     },
-    "EvaluationRequestResource": {
+    "AccessEvaluationRequestResource": {
       "type": "object",
       "properties": {
         "type": {
@@ -130,7 +114,7 @@
         "id"
       ]
     },
-    "EvaluationRequestSubject": {
+    "AccessEvaluationRequestSubject": {
       "type": "object",
       "properties": {
         "type": {
@@ -159,7 +143,7 @@
         "id"
       ]
     },
-    "EvaluationResponseContext": {
+    "AccessEvaluationResponseContext": {
       "type": "object",
       "properties": {
         "id": {
@@ -181,6 +165,22 @@
       "required": [
         "id"
       ]
+    },
+    "ContextReason": {
+      "type": "object",
+      "properties": {
+        "properties": {
+          "type": "object",
+          "example": {
+            "policy": "resource.expense.v1",
+            "rule": "owner_access"
+          },
+          "additionalProperties": {},
+          "description": "Key-value pairs providing reason details."
+        }
+      },
+      "description": "Reason for the access decision",
+      "title": "Reason provides explanation for administrative or user-facing purposes"
     },
     "protobufAny": {
       "type": "object",
@@ -218,17 +218,17 @@
         }
       }
     },
-    "v1EvaluationRequest": {
+    "v1AccessEvaluationRequest": {
       "type": "object",
       "properties": {
         "subject": {
-          "$ref": "#/definitions/EvaluationRequestSubject"
+          "$ref": "#/definitions/AccessEvaluationRequestSubject"
         },
         "resource": {
-          "$ref": "#/definitions/EvaluationRequestResource"
+          "$ref": "#/definitions/AccessEvaluationRequestResource"
         },
         "action": {
-          "$ref": "#/definitions/EvaluationRequestAction"
+          "$ref": "#/definitions/AccessEvaluationRequestAction"
         },
         "context": {
           "type": "object",
@@ -247,7 +247,7 @@
         "action"
       ]
     },
-    "v1EvaluationResponse": {
+    "v1AccessEvaluationResponse": {
       "type": "object",
       "properties": {
         "decision": {
@@ -256,7 +256,7 @@
           "description": "Whether to allow or deny the operation."
         },
         "context": {
-          "$ref": "#/definitions/EvaluationResponseContext",
+          "$ref": "#/definitions/AccessEvaluationResponseContext",
           "description": "Additional context about the evaluation."
         }
       },

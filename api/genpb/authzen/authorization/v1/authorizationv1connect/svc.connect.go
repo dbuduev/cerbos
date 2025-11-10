@@ -36,16 +36,16 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// AuthorizationServiceEvaluateProcedure is the fully-qualified name of the AuthorizationService's
-	// Evaluate RPC.
-	AuthorizationServiceEvaluateProcedure = "/authzen.authorization.v1.AuthorizationService/Evaluate"
+	// AuthorizationServiceAccessEvaluationProcedure is the fully-qualified name of the
+	// AuthorizationService's AccessEvaluation RPC.
+	AuthorizationServiceAccessEvaluationProcedure = "/authzen.authorization.v1.AuthorizationService/AccessEvaluation"
 )
 
 // AuthorizationServiceClient is a client for the authzen.authorization.v1.AuthorizationService
 // service.
 type AuthorizationServiceClient interface {
 	// Evaluate performs an access evaluation
-	Evaluate(context.Context, *connect.Request[v1.EvaluationRequest]) (*connect.Response[v1.EvaluationResponse], error)
+	AccessEvaluation(context.Context, *connect.Request[v1.AccessEvaluationRequest]) (*connect.Response[v1.AccessEvaluationResponse], error)
 }
 
 // NewAuthorizationServiceClient constructs a client for the
@@ -60,10 +60,10 @@ func NewAuthorizationServiceClient(httpClient connect.HTTPClient, baseURL string
 	baseURL = strings.TrimRight(baseURL, "/")
 	authorizationServiceMethods := v1.File_authzen_authorization_v1_svc_proto.Services().ByName("AuthorizationService").Methods()
 	return &authorizationServiceClient{
-		evaluate: connect.NewClient[v1.EvaluationRequest, v1.EvaluationResponse](
+		accessEvaluation: connect.NewClient[v1.AccessEvaluationRequest, v1.AccessEvaluationResponse](
 			httpClient,
-			baseURL+AuthorizationServiceEvaluateProcedure,
-			connect.WithSchema(authorizationServiceMethods.ByName("Evaluate")),
+			baseURL+AuthorizationServiceAccessEvaluationProcedure,
+			connect.WithSchema(authorizationServiceMethods.ByName("AccessEvaluation")),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -71,19 +71,19 @@ func NewAuthorizationServiceClient(httpClient connect.HTTPClient, baseURL string
 
 // authorizationServiceClient implements AuthorizationServiceClient.
 type authorizationServiceClient struct {
-	evaluate *connect.Client[v1.EvaluationRequest, v1.EvaluationResponse]
+	accessEvaluation *connect.Client[v1.AccessEvaluationRequest, v1.AccessEvaluationResponse]
 }
 
-// Evaluate calls authzen.authorization.v1.AuthorizationService.Evaluate.
-func (c *authorizationServiceClient) Evaluate(ctx context.Context, req *connect.Request[v1.EvaluationRequest]) (*connect.Response[v1.EvaluationResponse], error) {
-	return c.evaluate.CallUnary(ctx, req)
+// AccessEvaluation calls authzen.authorization.v1.AuthorizationService.AccessEvaluation.
+func (c *authorizationServiceClient) AccessEvaluation(ctx context.Context, req *connect.Request[v1.AccessEvaluationRequest]) (*connect.Response[v1.AccessEvaluationResponse], error) {
+	return c.accessEvaluation.CallUnary(ctx, req)
 }
 
 // AuthorizationServiceHandler is an implementation of the
 // authzen.authorization.v1.AuthorizationService service.
 type AuthorizationServiceHandler interface {
 	// Evaluate performs an access evaluation
-	Evaluate(context.Context, *connect.Request[v1.EvaluationRequest]) (*connect.Response[v1.EvaluationResponse], error)
+	AccessEvaluation(context.Context, *connect.Request[v1.AccessEvaluationRequest]) (*connect.Response[v1.AccessEvaluationResponse], error)
 }
 
 // NewAuthorizationServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -93,16 +93,16 @@ type AuthorizationServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewAuthorizationServiceHandler(svc AuthorizationServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	authorizationServiceMethods := v1.File_authzen_authorization_v1_svc_proto.Services().ByName("AuthorizationService").Methods()
-	authorizationServiceEvaluateHandler := connect.NewUnaryHandler(
-		AuthorizationServiceEvaluateProcedure,
-		svc.Evaluate,
-		connect.WithSchema(authorizationServiceMethods.ByName("Evaluate")),
+	authorizationServiceAccessEvaluationHandler := connect.NewUnaryHandler(
+		AuthorizationServiceAccessEvaluationProcedure,
+		svc.AccessEvaluation,
+		connect.WithSchema(authorizationServiceMethods.ByName("AccessEvaluation")),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/authzen.authorization.v1.AuthorizationService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case AuthorizationServiceEvaluateProcedure:
-			authorizationServiceEvaluateHandler.ServeHTTP(w, r)
+		case AuthorizationServiceAccessEvaluationProcedure:
+			authorizationServiceAccessEvaluationHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -112,6 +112,6 @@ func NewAuthorizationServiceHandler(svc AuthorizationServiceHandler, opts ...con
 // UnimplementedAuthorizationServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuthorizationServiceHandler struct{}
 
-func (UnimplementedAuthorizationServiceHandler) Evaluate(context.Context, *connect.Request[v1.EvaluationRequest]) (*connect.Response[v1.EvaluationResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("authzen.authorization.v1.AuthorizationService.Evaluate is not implemented"))
+func (UnimplementedAuthorizationServiceHandler) AccessEvaluation(context.Context, *connect.Request[v1.AccessEvaluationRequest]) (*connect.Response[v1.AccessEvaluationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("authzen.authorization.v1.AuthorizationService.AccessEvaluation is not implemented"))
 }

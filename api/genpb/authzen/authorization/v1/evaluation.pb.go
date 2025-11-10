@@ -29,30 +29,30 @@ const (
 )
 
 // AuthZEN evaluation request message
-type EvaluationRequest struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	Subject       *EvaluationRequest_Subject  `protobuf:"bytes,1,opt,name=subject,proto3" json:"subject,omitempty"`
-	Resource      *EvaluationRequest_Resource `protobuf:"bytes,2,opt,name=resource,proto3" json:"resource,omitempty"`
-	Action        *EvaluationRequest_Action   `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
-	Context       map[string]*structpb.Value  `protobuf:"bytes,4,rep,name=context,proto3" json:"context,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+type AccessEvaluationRequest struct {
+	state         protoimpl.MessageState            `protogen:"open.v1"`
+	Subject       *AccessEvaluationRequest_Subject  `protobuf:"bytes,1,opt,name=subject,proto3" json:"subject,omitempty"`
+	Resource      *AccessEvaluationRequest_Resource `protobuf:"bytes,2,opt,name=resource,proto3" json:"resource,omitempty"`
+	Action        *AccessEvaluationRequest_Action   `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
+	Context       map[string]*structpb.Value        `protobuf:"bytes,4,rep,name=context,proto3" json:"context,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *EvaluationRequest) Reset() {
-	*x = EvaluationRequest{}
+func (x *AccessEvaluationRequest) Reset() {
+	*x = AccessEvaluationRequest{}
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EvaluationRequest) String() string {
+func (x *AccessEvaluationRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EvaluationRequest) ProtoMessage() {}
+func (*AccessEvaluationRequest) ProtoMessage() {}
 
-func (x *EvaluationRequest) ProtoReflect() protoreflect.Message {
+func (x *AccessEvaluationRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -64,33 +64,33 @@ func (x *EvaluationRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EvaluationRequest.ProtoReflect.Descriptor instead.
-func (*EvaluationRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use AccessEvaluationRequest.ProtoReflect.Descriptor instead.
+func (*AccessEvaluationRequest) Descriptor() ([]byte, []int) {
 	return file_authzen_authorization_v1_evaluation_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *EvaluationRequest) GetSubject() *EvaluationRequest_Subject {
+func (x *AccessEvaluationRequest) GetSubject() *AccessEvaluationRequest_Subject {
 	if x != nil {
 		return x.Subject
 	}
 	return nil
 }
 
-func (x *EvaluationRequest) GetResource() *EvaluationRequest_Resource {
+func (x *AccessEvaluationRequest) GetResource() *AccessEvaluationRequest_Resource {
 	if x != nil {
 		return x.Resource
 	}
 	return nil
 }
 
-func (x *EvaluationRequest) GetAction() *EvaluationRequest_Action {
+func (x *AccessEvaluationRequest) GetAction() *AccessEvaluationRequest_Action {
 	if x != nil {
 		return x.Action
 	}
 	return nil
 }
 
-func (x *EvaluationRequest) GetContext() map[string]*structpb.Value {
+func (x *AccessEvaluationRequest) GetContext() map[string]*structpb.Value {
 	if x != nil {
 		return x.Context
 	}
@@ -98,28 +98,28 @@ func (x *EvaluationRequest) GetContext() map[string]*structpb.Value {
 }
 
 // AuthZEN evaluation response message
-type EvaluationResponse struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	Decision      bool                        `protobuf:"varint,1,opt,name=decision,proto3" json:"decision,omitempty"`
-	Context       *EvaluationResponse_Context `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+type AccessEvaluationResponse struct {
+	state         protoimpl.MessageState            `protogen:"open.v1"`
+	Decision      bool                              `protobuf:"varint,1,opt,name=decision,proto3" json:"decision,omitempty"`
+	Context       *AccessEvaluationResponse_Context `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *EvaluationResponse) Reset() {
-	*x = EvaluationResponse{}
+func (x *AccessEvaluationResponse) Reset() {
+	*x = AccessEvaluationResponse{}
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EvaluationResponse) String() string {
+func (x *AccessEvaluationResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EvaluationResponse) ProtoMessage() {}
+func (*AccessEvaluationResponse) ProtoMessage() {}
 
-func (x *EvaluationResponse) ProtoReflect() protoreflect.Message {
+func (x *AccessEvaluationResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -131,19 +131,19 @@ func (x *EvaluationResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EvaluationResponse.ProtoReflect.Descriptor instead.
-func (*EvaluationResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use AccessEvaluationResponse.ProtoReflect.Descriptor instead.
+func (*AccessEvaluationResponse) Descriptor() ([]byte, []int) {
 	return file_authzen_authorization_v1_evaluation_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *EvaluationResponse) GetDecision() bool {
+func (x *AccessEvaluationResponse) GetDecision() bool {
 	if x != nil {
 		return x.Decision
 	}
 	return false
 }
 
-func (x *EvaluationResponse) GetContext() *EvaluationResponse_Context {
+func (x *AccessEvaluationResponse) GetContext() *AccessEvaluationResponse_Context {
 	if x != nil {
 		return x.Context
 	}
@@ -151,7 +151,7 @@ func (x *EvaluationResponse) GetContext() *EvaluationResponse_Context {
 }
 
 // Subject represents the principal requesting access
-type EvaluationRequest_Subject struct {
+type AccessEvaluationRequest_Subject struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
 	Type          string                     `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
 	Id            string                     `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
@@ -160,20 +160,20 @@ type EvaluationRequest_Subject struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *EvaluationRequest_Subject) Reset() {
-	*x = EvaluationRequest_Subject{}
+func (x *AccessEvaluationRequest_Subject) Reset() {
+	*x = AccessEvaluationRequest_Subject{}
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EvaluationRequest_Subject) String() string {
+func (x *AccessEvaluationRequest_Subject) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EvaluationRequest_Subject) ProtoMessage() {}
+func (*AccessEvaluationRequest_Subject) ProtoMessage() {}
 
-func (x *EvaluationRequest_Subject) ProtoReflect() protoreflect.Message {
+func (x *AccessEvaluationRequest_Subject) ProtoReflect() protoreflect.Message {
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -185,26 +185,26 @@ func (x *EvaluationRequest_Subject) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EvaluationRequest_Subject.ProtoReflect.Descriptor instead.
-func (*EvaluationRequest_Subject) Descriptor() ([]byte, []int) {
+// Deprecated: Use AccessEvaluationRequest_Subject.ProtoReflect.Descriptor instead.
+func (*AccessEvaluationRequest_Subject) Descriptor() ([]byte, []int) {
 	return file_authzen_authorization_v1_evaluation_proto_rawDescGZIP(), []int{0, 0}
 }
 
-func (x *EvaluationRequest_Subject) GetType() string {
+func (x *AccessEvaluationRequest_Subject) GetType() string {
 	if x != nil {
 		return x.Type
 	}
 	return ""
 }
 
-func (x *EvaluationRequest_Subject) GetId() string {
+func (x *AccessEvaluationRequest_Subject) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *EvaluationRequest_Subject) GetProperties() map[string]*structpb.Value {
+func (x *AccessEvaluationRequest_Subject) GetProperties() map[string]*structpb.Value {
 	if x != nil {
 		return x.Properties
 	}
@@ -212,7 +212,7 @@ func (x *EvaluationRequest_Subject) GetProperties() map[string]*structpb.Value {
 }
 
 // Resource represents the target of the access request
-type EvaluationRequest_Resource struct {
+type AccessEvaluationRequest_Resource struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
 	Type          string                     `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
 	Id            string                     `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
@@ -221,20 +221,20 @@ type EvaluationRequest_Resource struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *EvaluationRequest_Resource) Reset() {
-	*x = EvaluationRequest_Resource{}
+func (x *AccessEvaluationRequest_Resource) Reset() {
+	*x = AccessEvaluationRequest_Resource{}
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EvaluationRequest_Resource) String() string {
+func (x *AccessEvaluationRequest_Resource) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EvaluationRequest_Resource) ProtoMessage() {}
+func (*AccessEvaluationRequest_Resource) ProtoMessage() {}
 
-func (x *EvaluationRequest_Resource) ProtoReflect() protoreflect.Message {
+func (x *AccessEvaluationRequest_Resource) ProtoReflect() protoreflect.Message {
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -246,26 +246,26 @@ func (x *EvaluationRequest_Resource) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EvaluationRequest_Resource.ProtoReflect.Descriptor instead.
-func (*EvaluationRequest_Resource) Descriptor() ([]byte, []int) {
+// Deprecated: Use AccessEvaluationRequest_Resource.ProtoReflect.Descriptor instead.
+func (*AccessEvaluationRequest_Resource) Descriptor() ([]byte, []int) {
 	return file_authzen_authorization_v1_evaluation_proto_rawDescGZIP(), []int{0, 1}
 }
 
-func (x *EvaluationRequest_Resource) GetType() string {
+func (x *AccessEvaluationRequest_Resource) GetType() string {
 	if x != nil {
 		return x.Type
 	}
 	return ""
 }
 
-func (x *EvaluationRequest_Resource) GetId() string {
+func (x *AccessEvaluationRequest_Resource) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *EvaluationRequest_Resource) GetProperties() map[string]*structpb.Value {
+func (x *AccessEvaluationRequest_Resource) GetProperties() map[string]*structpb.Value {
 	if x != nil {
 		return x.Properties
 	}
@@ -273,7 +273,7 @@ func (x *EvaluationRequest_Resource) GetProperties() map[string]*structpb.Value 
 }
 
 // Action represents the operation being performed
-type EvaluationRequest_Action struct {
+type AccessEvaluationRequest_Action struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
 	Name          string                     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Properties    map[string]*structpb.Value `protobuf:"bytes,2,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -281,20 +281,20 @@ type EvaluationRequest_Action struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *EvaluationRequest_Action) Reset() {
-	*x = EvaluationRequest_Action{}
+func (x *AccessEvaluationRequest_Action) Reset() {
+	*x = AccessEvaluationRequest_Action{}
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EvaluationRequest_Action) String() string {
+func (x *AccessEvaluationRequest_Action) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EvaluationRequest_Action) ProtoMessage() {}
+func (*AccessEvaluationRequest_Action) ProtoMessage() {}
 
-func (x *EvaluationRequest_Action) ProtoReflect() protoreflect.Message {
+func (x *AccessEvaluationRequest_Action) ProtoReflect() protoreflect.Message {
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -306,19 +306,19 @@ func (x *EvaluationRequest_Action) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EvaluationRequest_Action.ProtoReflect.Descriptor instead.
-func (*EvaluationRequest_Action) Descriptor() ([]byte, []int) {
+// Deprecated: Use AccessEvaluationRequest_Action.ProtoReflect.Descriptor instead.
+func (*AccessEvaluationRequest_Action) Descriptor() ([]byte, []int) {
 	return file_authzen_authorization_v1_evaluation_proto_rawDescGZIP(), []int{0, 2}
 }
 
-func (x *EvaluationRequest_Action) GetName() string {
+func (x *AccessEvaluationRequest_Action) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *EvaluationRequest_Action) GetProperties() map[string]*structpb.Value {
+func (x *AccessEvaluationRequest_Action) GetProperties() map[string]*structpb.Value {
 	if x != nil {
 		return x.Properties
 	}
@@ -326,29 +326,29 @@ func (x *EvaluationRequest_Action) GetProperties() map[string]*structpb.Value {
 }
 
 // Context provides additional information about the evaluation
-type EvaluationResponse_Context struct {
-	state         protoimpl.MessageState             `protogen:"open.v1"`
-	Id            string                             `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	ReasonAdmin   *EvaluationResponse_Context_Reason `protobuf:"bytes,2,opt,name=reason_admin,json=reasonAdmin,proto3" json:"reason_admin,omitempty"`
-	ReasonUser    *EvaluationResponse_Context_Reason `protobuf:"bytes,3,opt,name=reason_user,json=reasonUser,proto3" json:"reason_user,omitempty"`
+type AccessEvaluationResponse_Context struct {
+	state         protoimpl.MessageState                   `protogen:"open.v1"`
+	Id            string                                   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	ReasonAdmin   *AccessEvaluationResponse_Context_Reason `protobuf:"bytes,2,opt,name=reason_admin,json=reasonAdmin,proto3" json:"reason_admin,omitempty"`
+	ReasonUser    *AccessEvaluationResponse_Context_Reason `protobuf:"bytes,3,opt,name=reason_user,json=reasonUser,proto3" json:"reason_user,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *EvaluationResponse_Context) Reset() {
-	*x = EvaluationResponse_Context{}
+func (x *AccessEvaluationResponse_Context) Reset() {
+	*x = AccessEvaluationResponse_Context{}
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EvaluationResponse_Context) String() string {
+func (x *AccessEvaluationResponse_Context) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EvaluationResponse_Context) ProtoMessage() {}
+func (*AccessEvaluationResponse_Context) ProtoMessage() {}
 
-func (x *EvaluationResponse_Context) ProtoReflect() protoreflect.Message {
+func (x *AccessEvaluationResponse_Context) ProtoReflect() protoreflect.Message {
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -360,26 +360,26 @@ func (x *EvaluationResponse_Context) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EvaluationResponse_Context.ProtoReflect.Descriptor instead.
-func (*EvaluationResponse_Context) Descriptor() ([]byte, []int) {
+// Deprecated: Use AccessEvaluationResponse_Context.ProtoReflect.Descriptor instead.
+func (*AccessEvaluationResponse_Context) Descriptor() ([]byte, []int) {
 	return file_authzen_authorization_v1_evaluation_proto_rawDescGZIP(), []int{1, 0}
 }
 
-func (x *EvaluationResponse_Context) GetId() string {
+func (x *AccessEvaluationResponse_Context) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *EvaluationResponse_Context) GetReasonAdmin() *EvaluationResponse_Context_Reason {
+func (x *AccessEvaluationResponse_Context) GetReasonAdmin() *AccessEvaluationResponse_Context_Reason {
 	if x != nil {
 		return x.ReasonAdmin
 	}
 	return nil
 }
 
-func (x *EvaluationResponse_Context) GetReasonUser() *EvaluationResponse_Context_Reason {
+func (x *AccessEvaluationResponse_Context) GetReasonUser() *AccessEvaluationResponse_Context_Reason {
 	if x != nil {
 		return x.ReasonUser
 	}
@@ -387,27 +387,27 @@ func (x *EvaluationResponse_Context) GetReasonUser() *EvaluationResponse_Context
 }
 
 // Reason provides explanation for administrative or user-facing purposes
-type EvaluationResponse_Context_Reason struct {
+type AccessEvaluationResponse_Context_Reason struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
 	Properties    map[string]*structpb.Value `protobuf:"bytes,1,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *EvaluationResponse_Context_Reason) Reset() {
-	*x = EvaluationResponse_Context_Reason{}
+func (x *AccessEvaluationResponse_Context_Reason) Reset() {
+	*x = AccessEvaluationResponse_Context_Reason{}
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EvaluationResponse_Context_Reason) String() string {
+func (x *AccessEvaluationResponse_Context_Reason) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EvaluationResponse_Context_Reason) ProtoMessage() {}
+func (*AccessEvaluationResponse_Context_Reason) ProtoMessage() {}
 
-func (x *EvaluationResponse_Context_Reason) ProtoReflect() protoreflect.Message {
+func (x *AccessEvaluationResponse_Context_Reason) ProtoReflect() protoreflect.Message {
 	mi := &file_authzen_authorization_v1_evaluation_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -419,12 +419,12 @@ func (x *EvaluationResponse_Context_Reason) ProtoReflect() protoreflect.Message 
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EvaluationResponse_Context_Reason.ProtoReflect.Descriptor instead.
-func (*EvaluationResponse_Context_Reason) Descriptor() ([]byte, []int) {
+// Deprecated: Use AccessEvaluationResponse_Context_Reason.ProtoReflect.Descriptor instead.
+func (*AccessEvaluationResponse_Context_Reason) Descriptor() ([]byte, []int) {
 	return file_authzen_authorization_v1_evaluation_proto_rawDescGZIP(), []int{1, 0, 0}
 }
 
-func (x *EvaluationResponse_Context_Reason) GetProperties() map[string]*structpb.Value {
+func (x *AccessEvaluationResponse_Context_Reason) GetProperties() map[string]*structpb.Value {
 	if x != nil {
 		return x.Properties
 	}
@@ -435,37 +435,37 @@ var File_authzen_authorization_v1_evaluation_proto protoreflect.FileDescriptor
 
 const file_authzen_authorization_v1_evaluation_proto_rawDesc = "" +
 	"\n" +
-	")authzen/authorization/v1/evaluation.proto\x12\x18authzen.authorization.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"\x97\x11\n" +
-	"\x11EvaluationRequest\x12X\n" +
-	"\asubject\x18\x01 \x01(\v23.authzen.authorization.v1.EvaluationRequest.SubjectB\t\xe0A\x02\xbaH\x03\xc8\x01\x01R\asubject\x12[\n" +
-	"\bresource\x18\x02 \x01(\v24.authzen.authorization.v1.EvaluationRequest.ResourceB\t\xe0A\x02\xbaH\x03\xc8\x01\x01R\bresource\x12U\n" +
-	"\x06action\x18\x03 \x01(\v22.authzen.authorization.v1.EvaluationRequest.ActionB\t\xe0A\x02\xbaH\x03\xc8\x01\x01R\x06action\x12\xec\x01\n" +
-	"\acontext\x18\x04 \x03(\v28.authzen.authorization.v1.EvaluationRequest.ContextEntryB\x97\x01\x92A\x82\x012^Key-value pairs of environmental/contextual data that should be used during policy evaluation.J {\"time\": \"2023-01-01T00:00:00Z\"}\xbaH\x0e\x9a\x01\v\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\acontext\x1a\xa4\x04\n" +
+	")authzen/authorization/v1/evaluation.proto\x12\x18authzen.authorization.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"\xc7\x11\n" +
+	"\x17AccessEvaluationRequest\x12^\n" +
+	"\asubject\x18\x01 \x01(\v29.authzen.authorization.v1.AccessEvaluationRequest.SubjectB\t\xe0A\x02\xbaH\x03\xc8\x01\x01R\asubject\x12a\n" +
+	"\bresource\x18\x02 \x01(\v2:.authzen.authorization.v1.AccessEvaluationRequest.ResourceB\t\xe0A\x02\xbaH\x03\xc8\x01\x01R\bresource\x12[\n" +
+	"\x06action\x18\x03 \x01(\v28.authzen.authorization.v1.AccessEvaluationRequest.ActionB\t\xe0A\x02\xbaH\x03\xc8\x01\x01R\x06action\x12\xf2\x01\n" +
+	"\acontext\x18\x04 \x03(\v2>.authzen.authorization.v1.AccessEvaluationRequest.ContextEntryB\x97\x01\x92A\x82\x012^Key-value pairs of environmental/contextual data that should be used during policy evaluation.J {\"time\": \"2023-01-01T00:00:00Z\"}\xbaH\x0e\x9a\x01\v\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\acontext\x1a\xaa\x04\n" +
 	"\aSubject\x12B\n" +
 	"\x04type\x18\x01 \x01(\tB.\x92A\x1e2\x14Type of the subject.J\x06\"user\"\xe0A\x02\xbaH\a\xc8\x01\x01r\x02\x10\x01R\x04type\x12Z\n" +
-	"\x02id\x18\x02 \x01(\tBJ\x92A:2\"Unique identifier for the subject.J\x14\"alice@acmecorp.com\"\xe0A\x02\xbaH\a\xc8\x01\x01r\x02\x10\x01R\x02id\x12\xff\x01\n" +
+	"\x02id\x18\x02 \x01(\tBJ\x92A:2\"Unique identifier for the subject.J\x14\"alice@acmecorp.com\"\xe0A\x02\xbaH\a\xc8\x01\x01r\x02\x10\x01R\x02id\x12\x85\x02\n" +
 	"\n" +
-	"properties\x18\x03 \x03(\v2C.authzen.authorization.v1.EvaluationRequest.Subject.PropertiesEntryB\x99\x01\x92A\x84\x012cKey-value pairs of contextual data about this subject that should be used during policy evaluation.J\x1d{\"department\": \"engineering\"}\xbaH\x0e\x9a\x01\v\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\n" +
+	"properties\x18\x03 \x03(\v2I.authzen.authorization.v1.AccessEvaluationRequest.Subject.PropertiesEntryB\x99\x01\x92A\x84\x012cKey-value pairs of contextual data about this subject that should be used during policy evaluation.J\x1d{\"department\": \"engineering\"}\xbaH\x0e\x9a\x01\v\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\n" +
 	"properties\x1aU\n" +
 	"\x0fPropertiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
 	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01: \x92A\x1d\n" +
-	"\x1b2\x19Subject requesting access\x1a\x94\x04\n" +
+	"\x1b2\x19Subject requesting access\x1a\x9a\x04\n" +
 	"\bResource\x12F\n" +
 	"\x04type\x18\x01 \x01(\tB2\x92A\"2\x15Type of the resource.J\t\"account\"\xe0A\x02\xbaH\a\xc8\x01\x01r\x02\x10\x01R\x04type\x12L\n" +
-	"\x02id\x18\x02 \x01(\tB<\x92A,2#Unique identifier for the resource.J\x05\"123\"\xe0A\x02\xbaH\a\xc8\x01\x01r\x02\x10\x01R\x02id\x12\xfa\x01\n" +
+	"\x02id\x18\x02 \x01(\tB<\x92A,2#Unique identifier for the resource.J\x05\"123\"\xe0A\x02\xbaH\a\xc8\x01\x01r\x02\x10\x01R\x02id\x12\x80\x02\n" +
 	"\n" +
-	"properties\x18\x03 \x03(\v2D.authzen.authorization.v1.EvaluationRequest.Resource.PropertiesEntryB\x93\x01\x92A\x7f2dKey-value pairs of contextual data about this resource that should be used during policy evaluation.J\x17{\"owner\": \"bugs_bunny\"}\xbaH\x0e\x9a\x01\v\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\n" +
+	"properties\x18\x03 \x03(\v2J.authzen.authorization.v1.AccessEvaluationRequest.Resource.PropertiesEntryB\x93\x01\x92A\x7f2dKey-value pairs of contextual data about this resource that should be used during policy evaluation.J\x17{\"owner\": \"bugs_bunny\"}\xbaH\x0e\x9a\x01\v\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\n" +
 	"properties\x1aU\n" +
 	"\x0fPropertiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
 	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01:\x1e\x92A\x1b\n" +
-	"\x192\x17Resource being accessed\x1a\xc8\x03\n" +
+	"\x192\x17Resource being accessed\x1a\xce\x03\n" +
 	"\x06Action\x12U\n" +
 	"\x04name\x18\x01 \x01(\tBA\x92A12#Name of the action being performed.J\n" +
-	"\"can_read\"\xe0A\x02\xbaH\a\xc8\x01\x01r\x02\x10\x01R\x04name\x12\xf0\x01\n" +
+	"\"can_read\"\xe0A\x02\xbaH\a\xc8\x01\x01r\x02\x10\x01R\x04name\x12\xf6\x01\n" +
 	"\n" +
-	"properties\x18\x02 \x03(\v2B.authzen.authorization.v1.EvaluationRequest.Action.PropertiesEntryB\x8b\x01\x92Aw2bKey-value pairs of contextual data about this action that should be used during policy evaluation.J\x11{\"method\": \"GET\"}\xbaH\x0e\x9a\x01\v\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\n" +
+	"properties\x18\x02 \x03(\v2H.authzen.authorization.v1.AccessEvaluationRequest.Action.PropertiesEntryB\x8b\x01\x92Aw2bKey-value pairs of contextual data about this action that should be used during policy evaluation.J\x11{\"method\": \"GET\"}\xbaH\x0e\x9a\x01\v\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\n" +
 	"properties\x1aU\n" +
 	"\x0fPropertiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
@@ -474,18 +474,18 @@ const file_authzen_authorization_v1_evaluation_proto_rawDesc = "" +
 	"\fContextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
 	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01:(\x92A%\n" +
-	"#2!AuthZEN access evaluation request\"\xd2\b\n" +
-	"\x12EvaluationResponse\x12W\n" +
-	"\bdecision\x18\x01 \x01(\bB;\x92A/2'Whether to allow or deny the operation.J\x04true\xe0A\x02\xbaH\x03\xc8\x01\x01R\bdecision\x12}\n" +
-	"\acontext\x18\x02 \x01(\v24.authzen.authorization.v1.EvaluationResponse.ContextB-\x92A*2(Additional context about the evaluation.R\acontext\x1a\xb8\x06\n" +
+	"#2!AuthZEN access evaluation request\"\xf1\b\n" +
+	"\x18AccessEvaluationResponse\x12W\n" +
+	"\bdecision\x18\x01 \x01(\bB;\x92A/2'Whether to allow or deny the operation.J\x04true\xe0A\x02\xbaH\x03\xc8\x01\x01R\bdecision\x12\x83\x01\n" +
+	"\acontext\x18\x02 \x01(\v2:.authzen.authorization.v1.AccessEvaluationResponse.ContextB-\x92A*2(Additional context about the evaluation.R\acontext\x1a\xca\x06\n" +
 	"\aContext\x12`\n" +
-	"\x02id\x18\x01 \x01(\tBP\x92A@2*Identifier describing the response reason.J\x12\"policy_evaluated\"\xe0A\x02\xbaH\a\xc8\x01\x01r\x02\x10\x01R\x02id\x12\x91\x01\n" +
-	"\freason_admin\x18\x02 \x01(\v2;.authzen.authorization.v1.EvaluationResponse.Context.ReasonB1\x92A.2,Administrative reason for internal purposes.R\vreasonAdmin\x12\x93\x01\n" +
-	"\vreason_user\x18\x03 \x01(\v2;.authzen.authorization.v1.EvaluationResponse.Context.ReasonB5\x92A220User-facing reason for explaining access denial.R\n" +
-	"reasonUser\x1a\xf0\x02\n" +
-	"\x06Reason\x12\xe7\x01\n" +
+	"\x02id\x18\x01 \x01(\tBP\x92A@2*Identifier describing the response reason.J\x12\"policy_evaluated\"\xe0A\x02\xbaH\a\xc8\x01\x01r\x02\x10\x01R\x02id\x12\x97\x01\n" +
+	"\freason_admin\x18\x02 \x01(\v2A.authzen.authorization.v1.AccessEvaluationResponse.Context.ReasonB1\x92A.2,Administrative reason for internal purposes.R\vreasonAdmin\x12\x99\x01\n" +
+	"\vreason_user\x18\x03 \x01(\v2A.authzen.authorization.v1.AccessEvaluationResponse.Context.ReasonB5\x92A220User-facing reason for explaining access denial.R\n" +
+	"reasonUser\x1a\xf6\x02\n" +
+	"\x06Reason\x12\xed\x01\n" +
 	"\n" +
-	"properties\x18\x01 \x03(\v2K.authzen.authorization.v1.EvaluationResponse.Context.Reason.PropertiesEntryBz\x92Af2)Key-value pairs providing reason details.J9{\"policy\": \"resource.expense.v1\", \"rule\": \"owner_access\"}\xbaH\x0e\x9a\x01\v\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\n" +
+	"properties\x18\x01 \x03(\v2Q.authzen.authorization.v1.AccessEvaluationResponse.Context.Reason.PropertiesEntryBz\x92Af2)Key-value pairs providing reason details.J9{\"policy\": \"resource.expense.v1\", \"rule\": \"owner_access\"}\xbaH\x0e\x9a\x01\v\"\x04r\x02\x10\x01*\x03\xc8\x01\x01R\n" +
 	"properties\x1aU\n" +
 	"\x0fPropertiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
@@ -509,37 +509,37 @@ func file_authzen_authorization_v1_evaluation_proto_rawDescGZIP() []byte {
 
 var file_authzen_authorization_v1_evaluation_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_authzen_authorization_v1_evaluation_proto_goTypes = []any{
-	(*EvaluationRequest)(nil),          // 0: authzen.authorization.v1.EvaluationRequest
-	(*EvaluationResponse)(nil),         // 1: authzen.authorization.v1.EvaluationResponse
-	(*EvaluationRequest_Subject)(nil),  // 2: authzen.authorization.v1.EvaluationRequest.Subject
-	(*EvaluationRequest_Resource)(nil), // 3: authzen.authorization.v1.EvaluationRequest.Resource
-	(*EvaluationRequest_Action)(nil),   // 4: authzen.authorization.v1.EvaluationRequest.Action
-	nil,                                // 5: authzen.authorization.v1.EvaluationRequest.ContextEntry
-	nil,                                // 6: authzen.authorization.v1.EvaluationRequest.Subject.PropertiesEntry
-	nil,                                // 7: authzen.authorization.v1.EvaluationRequest.Resource.PropertiesEntry
-	nil,                                // 8: authzen.authorization.v1.EvaluationRequest.Action.PropertiesEntry
-	(*EvaluationResponse_Context)(nil), // 9: authzen.authorization.v1.EvaluationResponse.Context
-	(*EvaluationResponse_Context_Reason)(nil), // 10: authzen.authorization.v1.EvaluationResponse.Context.Reason
-	nil,                    // 11: authzen.authorization.v1.EvaluationResponse.Context.Reason.PropertiesEntry
+	(*AccessEvaluationRequest)(nil),          // 0: authzen.authorization.v1.AccessEvaluationRequest
+	(*AccessEvaluationResponse)(nil),         // 1: authzen.authorization.v1.AccessEvaluationResponse
+	(*AccessEvaluationRequest_Subject)(nil),  // 2: authzen.authorization.v1.AccessEvaluationRequest.Subject
+	(*AccessEvaluationRequest_Resource)(nil), // 3: authzen.authorization.v1.AccessEvaluationRequest.Resource
+	(*AccessEvaluationRequest_Action)(nil),   // 4: authzen.authorization.v1.AccessEvaluationRequest.Action
+	nil,                                      // 5: authzen.authorization.v1.AccessEvaluationRequest.ContextEntry
+	nil,                                      // 6: authzen.authorization.v1.AccessEvaluationRequest.Subject.PropertiesEntry
+	nil,                                      // 7: authzen.authorization.v1.AccessEvaluationRequest.Resource.PropertiesEntry
+	nil,                                      // 8: authzen.authorization.v1.AccessEvaluationRequest.Action.PropertiesEntry
+	(*AccessEvaluationResponse_Context)(nil), // 9: authzen.authorization.v1.AccessEvaluationResponse.Context
+	(*AccessEvaluationResponse_Context_Reason)(nil), // 10: authzen.authorization.v1.AccessEvaluationResponse.Context.Reason
+	nil,                    // 11: authzen.authorization.v1.AccessEvaluationResponse.Context.Reason.PropertiesEntry
 	(*structpb.Value)(nil), // 12: google.protobuf.Value
 }
 var file_authzen_authorization_v1_evaluation_proto_depIdxs = []int32{
-	2,  // 0: authzen.authorization.v1.EvaluationRequest.subject:type_name -> authzen.authorization.v1.EvaluationRequest.Subject
-	3,  // 1: authzen.authorization.v1.EvaluationRequest.resource:type_name -> authzen.authorization.v1.EvaluationRequest.Resource
-	4,  // 2: authzen.authorization.v1.EvaluationRequest.action:type_name -> authzen.authorization.v1.EvaluationRequest.Action
-	5,  // 3: authzen.authorization.v1.EvaluationRequest.context:type_name -> authzen.authorization.v1.EvaluationRequest.ContextEntry
-	9,  // 4: authzen.authorization.v1.EvaluationResponse.context:type_name -> authzen.authorization.v1.EvaluationResponse.Context
-	6,  // 5: authzen.authorization.v1.EvaluationRequest.Subject.properties:type_name -> authzen.authorization.v1.EvaluationRequest.Subject.PropertiesEntry
-	7,  // 6: authzen.authorization.v1.EvaluationRequest.Resource.properties:type_name -> authzen.authorization.v1.EvaluationRequest.Resource.PropertiesEntry
-	8,  // 7: authzen.authorization.v1.EvaluationRequest.Action.properties:type_name -> authzen.authorization.v1.EvaluationRequest.Action.PropertiesEntry
-	12, // 8: authzen.authorization.v1.EvaluationRequest.ContextEntry.value:type_name -> google.protobuf.Value
-	12, // 9: authzen.authorization.v1.EvaluationRequest.Subject.PropertiesEntry.value:type_name -> google.protobuf.Value
-	12, // 10: authzen.authorization.v1.EvaluationRequest.Resource.PropertiesEntry.value:type_name -> google.protobuf.Value
-	12, // 11: authzen.authorization.v1.EvaluationRequest.Action.PropertiesEntry.value:type_name -> google.protobuf.Value
-	10, // 12: authzen.authorization.v1.EvaluationResponse.Context.reason_admin:type_name -> authzen.authorization.v1.EvaluationResponse.Context.Reason
-	10, // 13: authzen.authorization.v1.EvaluationResponse.Context.reason_user:type_name -> authzen.authorization.v1.EvaluationResponse.Context.Reason
-	11, // 14: authzen.authorization.v1.EvaluationResponse.Context.Reason.properties:type_name -> authzen.authorization.v1.EvaluationResponse.Context.Reason.PropertiesEntry
-	12, // 15: authzen.authorization.v1.EvaluationResponse.Context.Reason.PropertiesEntry.value:type_name -> google.protobuf.Value
+	2,  // 0: authzen.authorization.v1.AccessEvaluationRequest.subject:type_name -> authzen.authorization.v1.AccessEvaluationRequest.Subject
+	3,  // 1: authzen.authorization.v1.AccessEvaluationRequest.resource:type_name -> authzen.authorization.v1.AccessEvaluationRequest.Resource
+	4,  // 2: authzen.authorization.v1.AccessEvaluationRequest.action:type_name -> authzen.authorization.v1.AccessEvaluationRequest.Action
+	5,  // 3: authzen.authorization.v1.AccessEvaluationRequest.context:type_name -> authzen.authorization.v1.AccessEvaluationRequest.ContextEntry
+	9,  // 4: authzen.authorization.v1.AccessEvaluationResponse.context:type_name -> authzen.authorization.v1.AccessEvaluationResponse.Context
+	6,  // 5: authzen.authorization.v1.AccessEvaluationRequest.Subject.properties:type_name -> authzen.authorization.v1.AccessEvaluationRequest.Subject.PropertiesEntry
+	7,  // 6: authzen.authorization.v1.AccessEvaluationRequest.Resource.properties:type_name -> authzen.authorization.v1.AccessEvaluationRequest.Resource.PropertiesEntry
+	8,  // 7: authzen.authorization.v1.AccessEvaluationRequest.Action.properties:type_name -> authzen.authorization.v1.AccessEvaluationRequest.Action.PropertiesEntry
+	12, // 8: authzen.authorization.v1.AccessEvaluationRequest.ContextEntry.value:type_name -> google.protobuf.Value
+	12, // 9: authzen.authorization.v1.AccessEvaluationRequest.Subject.PropertiesEntry.value:type_name -> google.protobuf.Value
+	12, // 10: authzen.authorization.v1.AccessEvaluationRequest.Resource.PropertiesEntry.value:type_name -> google.protobuf.Value
+	12, // 11: authzen.authorization.v1.AccessEvaluationRequest.Action.PropertiesEntry.value:type_name -> google.protobuf.Value
+	10, // 12: authzen.authorization.v1.AccessEvaluationResponse.Context.reason_admin:type_name -> authzen.authorization.v1.AccessEvaluationResponse.Context.Reason
+	10, // 13: authzen.authorization.v1.AccessEvaluationResponse.Context.reason_user:type_name -> authzen.authorization.v1.AccessEvaluationResponse.Context.Reason
+	11, // 14: authzen.authorization.v1.AccessEvaluationResponse.Context.Reason.properties:type_name -> authzen.authorization.v1.AccessEvaluationResponse.Context.Reason.PropertiesEntry
+	12, // 15: authzen.authorization.v1.AccessEvaluationResponse.Context.Reason.PropertiesEntry.value:type_name -> google.protobuf.Value
 	16, // [16:16] is the sub-list for method output_type
 	16, // [16:16] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name

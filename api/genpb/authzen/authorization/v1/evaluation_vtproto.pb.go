@@ -20,7 +20,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-func (m *EvaluationRequest_Subject) MarshalVT() (dAtA []byte, err error) {
+func (m *AccessEvaluationRequest_Subject) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -33,12 +33,12 @@ func (m *EvaluationRequest_Subject) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *EvaluationRequest_Subject) MarshalToVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationRequest_Subject) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *EvaluationRequest_Subject) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationRequest_Subject) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -89,7 +89,7 @@ func (m *EvaluationRequest_Subject) MarshalToSizedBufferVT(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 
-func (m *EvaluationRequest_Resource) MarshalVT() (dAtA []byte, err error) {
+func (m *AccessEvaluationRequest_Resource) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -102,12 +102,12 @@ func (m *EvaluationRequest_Resource) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *EvaluationRequest_Resource) MarshalToVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationRequest_Resource) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *EvaluationRequest_Resource) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationRequest_Resource) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -158,7 +158,7 @@ func (m *EvaluationRequest_Resource) MarshalToSizedBufferVT(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
-func (m *EvaluationRequest_Action) MarshalVT() (dAtA []byte, err error) {
+func (m *AccessEvaluationRequest_Action) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -171,12 +171,12 @@ func (m *EvaluationRequest_Action) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *EvaluationRequest_Action) MarshalToVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationRequest_Action) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *EvaluationRequest_Action) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationRequest_Action) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -220,7 +220,7 @@ func (m *EvaluationRequest_Action) MarshalToSizedBufferVT(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 
-func (m *EvaluationRequest) MarshalVT() (dAtA []byte, err error) {
+func (m *AccessEvaluationRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -233,12 +233,12 @@ func (m *EvaluationRequest) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *EvaluationRequest) MarshalToVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationRequest) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *EvaluationRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -305,7 +305,7 @@ func (m *EvaluationRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *EvaluationResponse_Context_Reason) MarshalVT() (dAtA []byte, err error) {
+func (m *AccessEvaluationResponse_Context_Reason) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -318,12 +318,12 @@ func (m *EvaluationResponse_Context_Reason) MarshalVT() (dAtA []byte, err error)
 	return dAtA[:n], nil
 }
 
-func (m *EvaluationResponse_Context_Reason) MarshalToVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationResponse_Context_Reason) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *EvaluationResponse_Context_Reason) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationResponse_Context_Reason) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -360,7 +360,7 @@ func (m *EvaluationResponse_Context_Reason) MarshalToSizedBufferVT(dAtA []byte) 
 	return len(dAtA) - i, nil
 }
 
-func (m *EvaluationResponse_Context) MarshalVT() (dAtA []byte, err error) {
+func (m *AccessEvaluationResponse_Context) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -373,12 +373,12 @@ func (m *EvaluationResponse_Context) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *EvaluationResponse_Context) MarshalToVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationResponse_Context) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *EvaluationResponse_Context) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationResponse_Context) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -420,7 +420,7 @@ func (m *EvaluationResponse_Context) MarshalToSizedBufferVT(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
-func (m *EvaluationResponse) MarshalVT() (dAtA []byte, err error) {
+func (m *AccessEvaluationResponse) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -433,12 +433,12 @@ func (m *EvaluationResponse) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *EvaluationResponse) MarshalToVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationResponse) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *EvaluationResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *AccessEvaluationResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -473,7 +473,7 @@ func (m *EvaluationResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *EvaluationRequest_Subject) SizeVT() (n int) {
+func (m *AccessEvaluationRequest_Subject) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -504,7 +504,7 @@ func (m *EvaluationRequest_Subject) SizeVT() (n int) {
 	return n
 }
 
-func (m *EvaluationRequest_Resource) SizeVT() (n int) {
+func (m *AccessEvaluationRequest_Resource) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -535,7 +535,7 @@ func (m *EvaluationRequest_Resource) SizeVT() (n int) {
 	return n
 }
 
-func (m *EvaluationRequest_Action) SizeVT() (n int) {
+func (m *AccessEvaluationRequest_Action) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -562,7 +562,7 @@ func (m *EvaluationRequest_Action) SizeVT() (n int) {
 	return n
 }
 
-func (m *EvaluationRequest) SizeVT() (n int) {
+func (m *AccessEvaluationRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -597,7 +597,7 @@ func (m *EvaluationRequest) SizeVT() (n int) {
 	return n
 }
 
-func (m *EvaluationResponse_Context_Reason) SizeVT() (n int) {
+func (m *AccessEvaluationResponse_Context_Reason) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -620,7 +620,7 @@ func (m *EvaluationResponse_Context_Reason) SizeVT() (n int) {
 	return n
 }
 
-func (m *EvaluationResponse_Context) SizeVT() (n int) {
+func (m *AccessEvaluationResponse_Context) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -642,7 +642,7 @@ func (m *EvaluationResponse_Context) SizeVT() (n int) {
 	return n
 }
 
-func (m *EvaluationResponse) SizeVT() (n int) {
+func (m *AccessEvaluationResponse) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -659,7 +659,7 @@ func (m *EvaluationResponse) SizeVT() (n int) {
 	return n
 }
 
-func (m *EvaluationRequest_Subject) UnmarshalVT(dAtA []byte) error {
+func (m *AccessEvaluationRequest_Subject) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -682,10 +682,10 @@ func (m *EvaluationRequest_Subject) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EvaluationRequest_Subject: wiretype end group for non-group")
+			return fmt.Errorf("proto: AccessEvaluationRequest_Subject: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EvaluationRequest_Subject: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AccessEvaluationRequest_Subject: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -903,7 +903,7 @@ func (m *EvaluationRequest_Subject) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EvaluationRequest_Resource) UnmarshalVT(dAtA []byte) error {
+func (m *AccessEvaluationRequest_Resource) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -926,10 +926,10 @@ func (m *EvaluationRequest_Resource) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EvaluationRequest_Resource: wiretype end group for non-group")
+			return fmt.Errorf("proto: AccessEvaluationRequest_Resource: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EvaluationRequest_Resource: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AccessEvaluationRequest_Resource: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1147,7 +1147,7 @@ func (m *EvaluationRequest_Resource) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EvaluationRequest_Action) UnmarshalVT(dAtA []byte) error {
+func (m *AccessEvaluationRequest_Action) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1170,10 +1170,10 @@ func (m *EvaluationRequest_Action) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EvaluationRequest_Action: wiretype end group for non-group")
+			return fmt.Errorf("proto: AccessEvaluationRequest_Action: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EvaluationRequest_Action: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AccessEvaluationRequest_Action: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1359,7 +1359,7 @@ func (m *EvaluationRequest_Action) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EvaluationRequest) UnmarshalVT(dAtA []byte) error {
+func (m *AccessEvaluationRequest) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1382,10 +1382,10 @@ func (m *EvaluationRequest) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EvaluationRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: AccessEvaluationRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EvaluationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AccessEvaluationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1418,7 +1418,7 @@ func (m *EvaluationRequest) UnmarshalVT(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Subject == nil {
-				m.Subject = &EvaluationRequest_Subject{}
+				m.Subject = &AccessEvaluationRequest_Subject{}
 			}
 			if err := m.Subject.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1454,7 +1454,7 @@ func (m *EvaluationRequest) UnmarshalVT(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Resource == nil {
-				m.Resource = &EvaluationRequest_Resource{}
+				m.Resource = &AccessEvaluationRequest_Resource{}
 			}
 			if err := m.Resource.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1490,7 +1490,7 @@ func (m *EvaluationRequest) UnmarshalVT(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Action == nil {
-				m.Action = &EvaluationRequest_Action{}
+				m.Action = &AccessEvaluationRequest_Action{}
 			}
 			if err := m.Action.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1647,7 +1647,7 @@ func (m *EvaluationRequest) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EvaluationResponse_Context_Reason) UnmarshalVT(dAtA []byte) error {
+func (m *AccessEvaluationResponse_Context_Reason) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1670,10 +1670,10 @@ func (m *EvaluationResponse_Context_Reason) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EvaluationResponse_Context_Reason: wiretype end group for non-group")
+			return fmt.Errorf("proto: AccessEvaluationResponse_Context_Reason: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EvaluationResponse_Context_Reason: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AccessEvaluationResponse_Context_Reason: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1827,7 +1827,7 @@ func (m *EvaluationResponse_Context_Reason) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EvaluationResponse_Context) UnmarshalVT(dAtA []byte) error {
+func (m *AccessEvaluationResponse_Context) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1850,10 +1850,10 @@ func (m *EvaluationResponse_Context) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EvaluationResponse_Context: wiretype end group for non-group")
+			return fmt.Errorf("proto: AccessEvaluationResponse_Context: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EvaluationResponse_Context: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AccessEvaluationResponse_Context: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1918,7 +1918,7 @@ func (m *EvaluationResponse_Context) UnmarshalVT(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.ReasonAdmin == nil {
-				m.ReasonAdmin = &EvaluationResponse_Context_Reason{}
+				m.ReasonAdmin = &AccessEvaluationResponse_Context_Reason{}
 			}
 			if err := m.ReasonAdmin.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1954,7 +1954,7 @@ func (m *EvaluationResponse_Context) UnmarshalVT(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.ReasonUser == nil {
-				m.ReasonUser = &EvaluationResponse_Context_Reason{}
+				m.ReasonUser = &AccessEvaluationResponse_Context_Reason{}
 			}
 			if err := m.ReasonUser.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1982,7 +1982,7 @@ func (m *EvaluationResponse_Context) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EvaluationResponse) UnmarshalVT(dAtA []byte) error {
+func (m *AccessEvaluationResponse) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2005,10 +2005,10 @@ func (m *EvaluationResponse) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EvaluationResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: AccessEvaluationResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EvaluationResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AccessEvaluationResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2061,7 +2061,7 @@ func (m *EvaluationResponse) UnmarshalVT(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Context == nil {
-				m.Context = &EvaluationResponse_Context{}
+				m.Context = &AccessEvaluationResponse_Context{}
 			}
 			if err := m.Context.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
 				return err

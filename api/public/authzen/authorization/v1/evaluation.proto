@@ -15,7 +15,7 @@ option go_package = "github.com/cerbos/cerbos/api/genpb/authzen/authorization/v1
 option java_package = "dev.authzen.api.v1.authorization";
 
 // AuthZEN evaluation request message
-message EvaluationRequest {
+message AccessEvaluationRequest {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {description: "AuthZEN access evaluation request"}
   };
@@ -152,7 +152,7 @@ message EvaluationRequest {
 }
 
 // AuthZEN evaluation response message
-message EvaluationResponse {
+message AccessEvaluationResponse {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {description: "AuthZEN access evaluation response"}
   };

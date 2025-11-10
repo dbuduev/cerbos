@@ -22,7 +22,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthorizationService_Evaluate_FullMethodName = "/authzen.authorization.v1.AuthorizationService/Evaluate"
+	AuthorizationService_AccessEvaluation_FullMethodName = "/authzen.authorization.v1.AuthorizationService/AccessEvaluation"
 )
 
 // AuthorizationServiceClient is the client API for AuthorizationService service.
@@ -32,7 +32,7 @@ const (
 // AuthZEN Authorization Service
 type AuthorizationServiceClient interface {
 	// Evaluate performs an access evaluation
-	Evaluate(ctx context.Context, in *EvaluationRequest, opts ...grpc.CallOption) (*EvaluationResponse, error)
+	AccessEvaluation(ctx context.Context, in *AccessEvaluationRequest, opts ...grpc.CallOption) (*AccessEvaluationResponse, error)
 }
 
 type authorizationServiceClient struct {
@@ -43,10 +43,10 @@ func NewAuthorizationServiceClient(cc grpc.ClientConnInterface) AuthorizationSer
 	return &authorizationServiceClient{cc}
 }
 
-func (c *authorizationServiceClient) Evaluate(ctx context.Context, in *EvaluationRequest, opts ...grpc.CallOption) (*EvaluationResponse, error) {
+func (c *authorizationServiceClient) AccessEvaluation(ctx context.Context, in *AccessEvaluationRequest, opts ...grpc.CallOption) (*AccessEvaluationResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EvaluationResponse)
-	err := c.cc.Invoke(ctx, AuthorizationService_Evaluate_FullMethodName, in, out, cOpts...)
+	out := new(AccessEvaluationResponse)
+	err := c.cc.Invoke(ctx, AuthorizationService_AccessEvaluation_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (c *authorizationServiceClient) Evaluate(ctx context.Context, in *Evaluatio
 // AuthZEN Authorization Service
 type AuthorizationServiceServer interface {
 	// Evaluate performs an access evaluation
-	Evaluate(context.Context, *EvaluationRequest) (*EvaluationResponse, error)
+	AccessEvaluation(context.Context, *AccessEvaluationRequest) (*AccessEvaluationResponse, error)
 	mustEmbedUnimplementedAuthorizationServiceServer()
 }
 
@@ -71,8 +71,8 @@ type AuthorizationServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAuthorizationServiceServer struct{}
 
-func (UnimplementedAuthorizationServiceServer) Evaluate(context.Context, *EvaluationRequest) (*EvaluationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Evaluate not implemented")
+func (UnimplementedAuthorizationServiceServer) AccessEvaluation(context.Context, *AccessEvaluationRequest) (*AccessEvaluationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AccessEvaluation not implemented")
 }
 func (UnimplementedAuthorizationServiceServer) mustEmbedUnimplementedAuthorizationServiceServer() {}
 func (UnimplementedAuthorizationServiceServer) testEmbeddedByValue()                              {}
@@ -95,20 +95,20 @@ func RegisterAuthorizationServiceServer(s grpc.ServiceRegistrar, srv Authorizati
 	s.RegisterService(&AuthorizationService_ServiceDesc, srv)
 }
 
-func _AuthorizationService_Evaluate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EvaluationRequest)
+func _AuthorizationService_AccessEvaluation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccessEvaluationRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthorizationServiceServer).Evaluate(ctx, in)
+		return srv.(AuthorizationServiceServer).AccessEvaluation(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AuthorizationService_Evaluate_FullMethodName,
+		FullMethod: AuthorizationService_AccessEvaluation_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthorizationServiceServer).Evaluate(ctx, req.(*EvaluationRequest))
+		return srv.(AuthorizationServiceServer).AccessEvaluation(ctx, req.(*AccessEvaluationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -121,8 +121,8 @@ var AuthorizationService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AuthorizationServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Evaluate",
-			Handler:    _AuthorizationService_Evaluate_Handler,
+			MethodName: "AccessEvaluation",
+			Handler:    _AuthorizationService_AccessEvaluation_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

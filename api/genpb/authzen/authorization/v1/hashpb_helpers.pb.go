@@ -13,12 +13,12 @@ import (
 	unsafe "unsafe"
 )
 
-func authzen_authorization_v1_EvaluationRequest_Action_hashpb_sum(m *EvaluationRequest_Action, hasher hash.Hash, ignore map[string]struct{}) {
-	if _, ok := ignore["authzen.authorization.v1.EvaluationRequest.Action.name"]; !ok {
+func authzen_authorization_v1_AccessEvaluationRequest_Action_hashpb_sum(m *AccessEvaluationRequest_Action, hasher hash.Hash, ignore map[string]struct{}) {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationRequest.Action.name"]; !ok {
 		_, _ = hasher.Write(protowire.AppendVarint(nil, uint64(len(m.GetName()))))
 		_, _ = hasher.Write(unsafe.Slice(unsafe.StringData(m.GetName()), len(m.GetName())))
 	}
-	if _, ok := ignore["authzen.authorization.v1.EvaluationRequest.Action.properties"]; !ok {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationRequest.Action.properties"]; !ok {
 		if len(m.Properties) > 0 {
 			for _, k := range slices.Sorted(maps.Keys(m.Properties)) {
 				_, _ = hasher.Write(protowire.AppendVarint(nil, uint64(len(k))))
@@ -31,16 +31,16 @@ func authzen_authorization_v1_EvaluationRequest_Action_hashpb_sum(m *EvaluationR
 	}
 }
 
-func authzen_authorization_v1_EvaluationRequest_Resource_hashpb_sum(m *EvaluationRequest_Resource, hasher hash.Hash, ignore map[string]struct{}) {
-	if _, ok := ignore["authzen.authorization.v1.EvaluationRequest.Resource.type"]; !ok {
+func authzen_authorization_v1_AccessEvaluationRequest_Resource_hashpb_sum(m *AccessEvaluationRequest_Resource, hasher hash.Hash, ignore map[string]struct{}) {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationRequest.Resource.type"]; !ok {
 		_, _ = hasher.Write(protowire.AppendVarint(nil, uint64(len(m.GetType()))))
 		_, _ = hasher.Write(unsafe.Slice(unsafe.StringData(m.GetType()), len(m.GetType())))
 	}
-	if _, ok := ignore["authzen.authorization.v1.EvaluationRequest.Resource.id"]; !ok {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationRequest.Resource.id"]; !ok {
 		_, _ = hasher.Write(protowire.AppendVarint(nil, uint64(len(m.GetId()))))
 		_, _ = hasher.Write(unsafe.Slice(unsafe.StringData(m.GetId()), len(m.GetId())))
 	}
-	if _, ok := ignore["authzen.authorization.v1.EvaluationRequest.Resource.properties"]; !ok {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationRequest.Resource.properties"]; !ok {
 		if len(m.Properties) > 0 {
 			for _, k := range slices.Sorted(maps.Keys(m.Properties)) {
 				_, _ = hasher.Write(protowire.AppendVarint(nil, uint64(len(k))))
@@ -53,16 +53,16 @@ func authzen_authorization_v1_EvaluationRequest_Resource_hashpb_sum(m *Evaluatio
 	}
 }
 
-func authzen_authorization_v1_EvaluationRequest_Subject_hashpb_sum(m *EvaluationRequest_Subject, hasher hash.Hash, ignore map[string]struct{}) {
-	if _, ok := ignore["authzen.authorization.v1.EvaluationRequest.Subject.type"]; !ok {
+func authzen_authorization_v1_AccessEvaluationRequest_Subject_hashpb_sum(m *AccessEvaluationRequest_Subject, hasher hash.Hash, ignore map[string]struct{}) {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationRequest.Subject.type"]; !ok {
 		_, _ = hasher.Write(protowire.AppendVarint(nil, uint64(len(m.GetType()))))
 		_, _ = hasher.Write(unsafe.Slice(unsafe.StringData(m.GetType()), len(m.GetType())))
 	}
-	if _, ok := ignore["authzen.authorization.v1.EvaluationRequest.Subject.id"]; !ok {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationRequest.Subject.id"]; !ok {
 		_, _ = hasher.Write(protowire.AppendVarint(nil, uint64(len(m.GetId()))))
 		_, _ = hasher.Write(unsafe.Slice(unsafe.StringData(m.GetId()), len(m.GetId())))
 	}
-	if _, ok := ignore["authzen.authorization.v1.EvaluationRequest.Subject.properties"]; !ok {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationRequest.Subject.properties"]; !ok {
 		if len(m.Properties) > 0 {
 			for _, k := range slices.Sorted(maps.Keys(m.Properties)) {
 				_, _ = hasher.Write(protowire.AppendVarint(nil, uint64(len(k))))
@@ -75,23 +75,23 @@ func authzen_authorization_v1_EvaluationRequest_Subject_hashpb_sum(m *Evaluation
 	}
 }
 
-func authzen_authorization_v1_EvaluationRequest_hashpb_sum(m *EvaluationRequest, hasher hash.Hash, ignore map[string]struct{}) {
-	if _, ok := ignore["authzen.authorization.v1.EvaluationRequest.subject"]; !ok {
+func authzen_authorization_v1_AccessEvaluationRequest_hashpb_sum(m *AccessEvaluationRequest, hasher hash.Hash, ignore map[string]struct{}) {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationRequest.subject"]; !ok {
 		if m.GetSubject() != nil {
-			authzen_authorization_v1_EvaluationRequest_Subject_hashpb_sum(m.GetSubject(), hasher, ignore)
+			authzen_authorization_v1_AccessEvaluationRequest_Subject_hashpb_sum(m.GetSubject(), hasher, ignore)
 		}
 	}
-	if _, ok := ignore["authzen.authorization.v1.EvaluationRequest.resource"]; !ok {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationRequest.resource"]; !ok {
 		if m.GetResource() != nil {
-			authzen_authorization_v1_EvaluationRequest_Resource_hashpb_sum(m.GetResource(), hasher, ignore)
+			authzen_authorization_v1_AccessEvaluationRequest_Resource_hashpb_sum(m.GetResource(), hasher, ignore)
 		}
 	}
-	if _, ok := ignore["authzen.authorization.v1.EvaluationRequest.action"]; !ok {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationRequest.action"]; !ok {
 		if m.GetAction() != nil {
-			authzen_authorization_v1_EvaluationRequest_Action_hashpb_sum(m.GetAction(), hasher, ignore)
+			authzen_authorization_v1_AccessEvaluationRequest_Action_hashpb_sum(m.GetAction(), hasher, ignore)
 		}
 	}
-	if _, ok := ignore["authzen.authorization.v1.EvaluationRequest.context"]; !ok {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationRequest.context"]; !ok {
 		if len(m.Context) > 0 {
 			for _, k := range slices.Sorted(maps.Keys(m.Context)) {
 				_, _ = hasher.Write(protowire.AppendVarint(nil, uint64(len(k))))
@@ -104,8 +104,8 @@ func authzen_authorization_v1_EvaluationRequest_hashpb_sum(m *EvaluationRequest,
 	}
 }
 
-func authzen_authorization_v1_EvaluationResponse_Context_Reason_hashpb_sum(m *EvaluationResponse_Context_Reason, hasher hash.Hash, ignore map[string]struct{}) {
-	if _, ok := ignore["authzen.authorization.v1.EvaluationResponse.Context.Reason.properties"]; !ok {
+func authzen_authorization_v1_AccessEvaluationResponse_Context_Reason_hashpb_sum(m *AccessEvaluationResponse_Context_Reason, hasher hash.Hash, ignore map[string]struct{}) {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationResponse.Context.Reason.properties"]; !ok {
 		if len(m.Properties) > 0 {
 			for _, k := range slices.Sorted(maps.Keys(m.Properties)) {
 				_, _ = hasher.Write(protowire.AppendVarint(nil, uint64(len(k))))
@@ -118,30 +118,30 @@ func authzen_authorization_v1_EvaluationResponse_Context_Reason_hashpb_sum(m *Ev
 	}
 }
 
-func authzen_authorization_v1_EvaluationResponse_Context_hashpb_sum(m *EvaluationResponse_Context, hasher hash.Hash, ignore map[string]struct{}) {
-	if _, ok := ignore["authzen.authorization.v1.EvaluationResponse.Context.id"]; !ok {
+func authzen_authorization_v1_AccessEvaluationResponse_Context_hashpb_sum(m *AccessEvaluationResponse_Context, hasher hash.Hash, ignore map[string]struct{}) {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationResponse.Context.id"]; !ok {
 		_, _ = hasher.Write(protowire.AppendVarint(nil, uint64(len(m.GetId()))))
 		_, _ = hasher.Write(unsafe.Slice(unsafe.StringData(m.GetId()), len(m.GetId())))
 	}
-	if _, ok := ignore["authzen.authorization.v1.EvaluationResponse.Context.reason_admin"]; !ok {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationResponse.Context.reason_admin"]; !ok {
 		if m.GetReasonAdmin() != nil {
-			authzen_authorization_v1_EvaluationResponse_Context_Reason_hashpb_sum(m.GetReasonAdmin(), hasher, ignore)
+			authzen_authorization_v1_AccessEvaluationResponse_Context_Reason_hashpb_sum(m.GetReasonAdmin(), hasher, ignore)
 		}
 	}
-	if _, ok := ignore["authzen.authorization.v1.EvaluationResponse.Context.reason_user"]; !ok {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationResponse.Context.reason_user"]; !ok {
 		if m.GetReasonUser() != nil {
-			authzen_authorization_v1_EvaluationResponse_Context_Reason_hashpb_sum(m.GetReasonUser(), hasher, ignore)
+			authzen_authorization_v1_AccessEvaluationResponse_Context_Reason_hashpb_sum(m.GetReasonUser(), hasher, ignore)
 		}
 	}
 }
 
-func authzen_authorization_v1_EvaluationResponse_hashpb_sum(m *EvaluationResponse, hasher hash.Hash, ignore map[string]struct{}) {
-	if _, ok := ignore["authzen.authorization.v1.EvaluationResponse.decision"]; !ok {
+func authzen_authorization_v1_AccessEvaluationResponse_hashpb_sum(m *AccessEvaluationResponse, hasher hash.Hash, ignore map[string]struct{}) {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationResponse.decision"]; !ok {
 		_, _ = hasher.Write(protowire.AppendVarint(nil, protowire.EncodeBool(m.GetDecision())))
 	}
-	if _, ok := ignore["authzen.authorization.v1.EvaluationResponse.context"]; !ok {
+	if _, ok := ignore["authzen.authorization.v1.AccessEvaluationResponse.context"]; !ok {
 		if m.GetContext() != nil {
-			authzen_authorization_v1_EvaluationResponse_Context_hashpb_sum(m.GetContext(), hasher, ignore)
+			authzen_authorization_v1_AccessEvaluationResponse_Context_hashpb_sum(m.GetContext(), hasher, ignore)
 		}
 	}
 }
