@@ -11,9 +11,6 @@ import (
 	effectv1 "github.com/cerbos/cerbos/api/genpb/cerbos/effect/v1"
 	enginev1 "github.com/cerbos/cerbos/api/genpb/cerbos/engine/v1"
 	requestv1 "github.com/cerbos/cerbos/api/genpb/cerbos/request/v1"
-	responsev1 "github.com/cerbos/cerbos/api/genpb/cerbos/response/v1"
-	"github.com/cerbos/cerbos/internal/auxdata"
-	"github.com/cerbos/cerbos/internal/engine"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -27,9 +24,9 @@ type AuthzenAuthorizationService struct {
 	*svcv1.UnimplementedAuthorizationServiceServer
 }
 
-func NewAuthzenAuthorizationService(eng *engine.Engine, auxData *auxdata.AuxData, reqLimits RequestLimits) *AuthzenAuthorizationService {
+func NewAuthzenAuthorizationService(svc *CerbosService) *AuthzenAuthorizationService {
 	return &AuthzenAuthorizationService{
-		svc:                                     NewCerbosService(eng, auxData, reqLimits),
+		svc:                                     svc,
 		UnimplementedAuthorizationServiceServer: &svcv1.UnimplementedAuthorizationServiceServer{}}
 }
 
@@ -54,7 +51,7 @@ func (aas *AuthzenAuthorizationService) AccessEvaluation(ctx context.Context, r 
 		Context: &svcv1.AccessEvaluationResponse_Context{
 			Id: resp.RequestId,
 			ReasonUser: &svcv1.AccessEvaluationResponse_Context_Reason{
-				Properties: map[string]*structpb.Value{cerbosProp("response"): respAsValue}
+				Properties: map[string]*structpb.Value{cerbosProp("response"): respAsValue},
 			},
 		},
 	}, nil
@@ -77,7 +74,7 @@ func lookupOrEmptyString(m map[string]*structpb.Value, k string) string {
 }
 func toCheckResourcesRequest(req *svcv1.AccessEvaluationRequest) (*requestv1.CheckResourcesRequest, error) {
 	return &requestv1.CheckResourcesRequest{
-		RequestId:   lookupOrEmptyString(req.GetContext(),"requestId"),
+		RequestId:   lookupOrEmptyString(req.GetContext(), "requestId"),
 		IncludeMeta: true,
 		Principal:   toPrincipal(req.Subject),
 		Resources: []*requestv1.CheckResourcesRequest_ResourceEntry{{

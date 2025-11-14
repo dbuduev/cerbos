@@ -36,6 +36,7 @@ import (
 	"google.golang.org/grpc/credentials/local"
 	"google.golang.org/grpc/metadata"
 
+	authzenv1 "github.com/cerbos/cerbos/api/genpb/authzen/authorization/v1"
 	svcv1 "github.com/cerbos/cerbos/api/genpb/cerbos/svc/v1"
 	"github.com/cerbos/cerbos/internal/audit"
 	"github.com/cerbos/cerbos/internal/telemetry"
@@ -291,6 +292,9 @@ func (s *Server) startGRPCServer(l net.Listener, core *CoreComponents) (*grpc.Se
 
 	cerbosSvc := svc.NewCerbosService(core.Engine, core.AuxData, core.ReqLimits)
 	svcv1.RegisterCerbosServiceServer(server, cerbosSvc)
+	authzenSvc := svc.NewAuthzenAuthorizationService(cerbosSvc)
+	authzenv1.RegisterAuthorizationServiceServer(server, authzenSvc)
+
 	s.health.SetServingStatus(svcv1.CerbosService_ServiceDesc.ServiceName, healthpb.HealthCheckResponse_SERVING)
 
 	if s.conf.AdminAPI.Enabled {
