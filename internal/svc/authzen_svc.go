@@ -12,7 +12,6 @@ import (
 	effectv1 "github.com/cerbos/cerbos/api/genpb/cerbos/effect/v1"
 	enginev1 "github.com/cerbos/cerbos/api/genpb/cerbos/engine/v1"
 	requestv1 "github.com/cerbos/cerbos/api/genpb/cerbos/request/v1"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -29,7 +28,8 @@ type AuthzenAuthorizationService struct {
 func NewAuthzenAuthorizationService(svc *CerbosService) *AuthzenAuthorizationService {
 	return &AuthzenAuthorizationService{
 		svc:                                     svc,
-		UnimplementedAuthorizationServiceServer: &svcv1.UnimplementedAuthorizationServiceServer{}}
+		UnimplementedAuthorizationServiceServer: &svcv1.UnimplementedAuthorizationServiceServer{},
+	}
 }
 
 // AccessEvaluation implements authorizationv1.AuthorizationServiceServer.
@@ -56,9 +56,11 @@ func (aas *AuthzenAuthorizationService) AccessEvaluation(ctx context.Context, r 
 		},
 	}, nil
 }
+
 func cerbosProp(s string) string {
 	return "cerbos." + s
 }
+
 func lookup[T any](m map[string]*T, k string) *T {
 	if v, ok := m[cerbosProp(k)]; ok {
 		return v
@@ -66,12 +68,14 @@ func lookup[T any](m map[string]*T, k string) *T {
 
 	return nil
 }
+
 func lookupOrEmptyString(m map[string]*structpb.Value, k string) string {
 	if v := lookup(m, k); v != nil {
 		return v.GetStringValue()
 	}
 	return ""
 }
+
 func toCheckResourcesRequest(req *svcv1.AccessEvaluationRequest) (*requestv1.CheckResourcesRequest, error) {
 	auxData, err := extractAuxData(req.GetContext())
 	if err != nil {
@@ -162,7 +166,8 @@ func valueToStructValue(fd protoreflect.FieldDescriptor, v protoreflect.Value) (
 	case protoreflect.BytesKind:
 		return structpb.NewStringValue(base64.StdEncoding.EncodeToString(v.Bytes())), nil
 	case protoreflect.MessageKind:
-		if fd.IsList() {
+		switch {
+		case fd.IsList():
 			list := v.List()
 			values := make([]*structpb.Value, list.Len())
 			for i := 0; i < list.Len(); i++ {
@@ -173,7 +178,7 @@ func valueToStructValue(fd protoreflect.FieldDescriptor, v protoreflect.Value) (
 				values[i] = itemValue
 			}
 			return structpb.NewListValue(&structpb.ListValue{Values: values}), nil
-		} else if fd.IsMap() {
+		case fd.IsMap():
 			mapValue := v.Map()
 			fields := make(map[string]*structpb.Value)
 			mapValue.Range(func(mk protoreflect.MapKey, mv protoreflect.Value) bool {
@@ -186,7 +191,7 @@ func valueToStructValue(fd protoreflect.FieldDescriptor, v protoreflect.Value) (
 				return true
 			})
 			return structpb.NewStructValue(&structpb.Struct{Fields: fields}), nil
-		} else {
+		default:
 			return messageToValue(v.Message())
 		}
 	case protoreflect.EnumKind:
@@ -197,6 +202,7 @@ func valueToStructValue(fd protoreflect.FieldDescriptor, v protoreflect.Value) (
 		return structpb.NewNullValue(), nil
 	}
 }
+
 func valueToMessage(value *structpb.Value, msg protoreflect.Message) error {
 	switch v := value.GetKind().(type) {
 	case *structpb.Value_StructValue:
@@ -207,6 +213,7 @@ func valueToMessage(value *structpb.Value, msg protoreflect.Message) error {
 		return fmt.Errorf("expected struct value for message, got %T", value.GetKind())
 	}
 }
+
 func structToMessage(s *structpb.Struct, msg protoreflect.Message) error {
 	msgDesc := msg.Descriptor()
 
@@ -261,7 +268,8 @@ func structValueToProtoValue(value *structpb.Value, fd protoreflect.FieldDescrip
 		return protoreflect.ValueOfBytes(data), nil
 
 	case protoreflect.MessageKind:
-		if fd.IsList() {
+		switch {
+		case fd.IsList():
 			listValue := value.GetListValue()
 			if listValue == nil {
 				return msg.NewField(fd), nil
@@ -276,8 +284,7 @@ func structValueToProtoValue(value *structpb.Value, fd protoreflect.FieldDescrip
 				list.Append(itemMsg)
 			}
 			return protoreflect.ValueOfList(list), nil
-
-		} else if fd.IsMap() {
+		case fd.IsMap():
 			structValue := value.GetStructValue()
 			if structValue == nil {
 				return msg.NewField(fd), nil
@@ -300,8 +307,7 @@ func structValueToProtoValue(value *structpb.Value, fd protoreflect.FieldDescrip
 				mapValue.Set(mapKey, mapVal)
 			}
 			return protoreflect.ValueOfMap(mapValue), nil
-
-		} else {
+		default:
 			// Regular message
 			newMsg := msg.NewField(fd)
 			if err := valueToMessage(value, newMsg.Message()); err != nil {
