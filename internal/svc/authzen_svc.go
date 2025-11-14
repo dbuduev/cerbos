@@ -8,12 +8,14 @@ import (
 	"fmt"
 
 	svcv1 "github.com/cerbos/cerbos/api/genpb/authzen/authorization/v1"
+	effectv1 "github.com/cerbos/cerbos/api/genpb/cerbos/effect/v1"
 	enginev1 "github.com/cerbos/cerbos/api/genpb/cerbos/engine/v1"
 	requestv1 "github.com/cerbos/cerbos/api/genpb/cerbos/request/v1"
 	responsev1 "github.com/cerbos/cerbos/api/genpb/cerbos/response/v1"
 	"github.com/cerbos/cerbos/internal/auxdata"
 	"github.com/cerbos/cerbos/internal/engine"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -32,39 +34,40 @@ func NewAuthzenAuthorizationService(eng *engine.Engine, auxData *auxdata.AuxData
 }
 
 // AccessEvaluation implements authorizationv1.AuthorizationServiceServer.
-func (aas *AuthzenAuthorizationService) AccessEvaluation(ctx context.Context, req *svcv1.AccessEvaluationRequest) (*svcv1.AccessEvaluationResponse, error) {
+func (aas *AuthzenAuthorizationService) AccessEvaluation(ctx context.Context, r *svcv1.AccessEvaluationRequest) (*svcv1.AccessEvaluationResponse, error) {
 	// _log := logging.ReqScopeLog(ctx)
-	cReq, err := toCheckResourcesRequest(req)
-	if err != nil {
-		return nil, err
-	}
-	cResp, err := aas.svc.CheckResources(ctx, cReq)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := toAccessEvaluationResponse(ctx, cResp)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
+	req, err := toCheckResourcesRequest(r)
 
-func toAccessEvaluationResponse(ctx context.Context, cResp *responsev1.CheckResourcesResponse) (*svcv1.AccessEvaluationResponse, error) {
-	panic("unimplemented")
+	if err != nil {
+		return nil, err
+	}
+	resp, err := aas.svc.CheckResources(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	respAsValue, err := recodeToValue(resp)
+	if err != nil {
+		return nil, err
+	}
+	return &svcv1.AccessEvaluationResponse{
+		Decision: resp.Results[0].Actions[req.Resources[0].Actions[0]] == effectv1.Effect_EFFECT_ALLOW,
+		Context: &svcv1.AccessEvaluationResponse_Context{
+			Id: resp.RequestId,
+			ReasonUser: &svcv1.AccessEvaluationResponse_Context_Reason{
+				Properties: map[string]*structpb.Value{cerbosProp("response"): respAsValue}
+			},
+		},
+	}, nil
+}
+func cerbosProp(s string) string {
+	return "cerbos." + s
 }
 func lookup[T any](m map[string]*T, k string) *T {
-	if v, ok := m[k]; ok {
+	if v, ok := m[cerbosProp(k)]; ok {
 		return v
 	}
 
 	return nil
-}
-func lookupOrDefault[T any](m map[string]T, k string, d T) T {
-	if v, ok := m[k]; ok {
-		return v
-	}
-
-	return d
 }
 func lookupOrEmptyString(m map[string]*structpb.Value, k string) string {
 	if v := lookup(m, k); v != nil {
@@ -73,9 +76,8 @@ func lookupOrEmptyString(m map[string]*structpb.Value, k string) string {
 	return ""
 }
 func toCheckResourcesRequest(req *svcv1.AccessEvaluationRequest) (*requestv1.CheckResourcesRequest, error) {
-	c := req.GetContext()
 	return &requestv1.CheckResourcesRequest{
-		RequestId:   lookupOrEmptyString(c, "requestId"),
+		RequestId:   lookupOrEmptyString(req.GetContext(),"requestId"),
 		IncludeMeta: true,
 		Principal:   toPrincipal(req.Subject),
 		Resources: []*requestv1.CheckResourcesRequest_ResourceEntry{{
@@ -116,21 +118,32 @@ func toPrincipal(subj *svcv1.AccessEvaluationRequest_Subject) *enginev1.Principa
 	}
 }
 
+// TODO: temp
+func recode(from, to proto.Message) error {
+	data, err := protojson.Marshal(from)
+	if err != nil {
+		return err
+	}
+	return protojson.Unmarshal(data, to)
+}
+
+func recodeToValue(from proto.Message) (*structpb.Value, error) {
+	v := new(structpb.Value)
+	if err := recode(from, v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
 func extractAuxData(m map[string]*structpb.Value) (*requestv1.AuxData, error) {
-	var data []byte
 	var auxData *structpb.Value
+	cAuxData := new(requestv1.AuxData)
 	var ok bool
 	if auxData, ok = m["auxData"]; !ok {
 		return nil, nil
 	}
-	data, err := protojson.Marshal(auxData)
+	err := recode(auxData, cAuxData)
 	if err != nil {
-		return nil, fmt.Errorf("can't marshal context auxData: %w", err)
-	}
-
-	cAuxData := new(requestv1.AuxData)
-	if err = protojson.Unmarshal(data, cAuxData); err != nil {
-		return nil, fmt.Errorf("can't unmarshal AuxData: %w", err)
+		return nil, fmt.Errorf("can't extract auxData: %w", err)
 	}
 
 	return cAuxData, nil
