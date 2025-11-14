@@ -5,6 +5,7 @@ package svc
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 
 	svcv1 "github.com/cerbos/cerbos/api/genpb/authzen/authorization/v1"
@@ -13,6 +14,7 @@ import (
 	requestv1 "github.com/cerbos/cerbos/api/genpb/cerbos/request/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -118,7 +120,10 @@ func toPrincipal(subj *svcv1.AccessEvaluationRequest_Subject) *enginev1.Principa
 	}
 }
 
-// TODO: temp
+// TODO: consider using protobuf reflection instead
+// See:
+// https://pkg.go.dev/google.golang.org/protobuf@v1.36.10/reflect/protorange
+// https://github.com/cerbos/protoc-gen-go-hashpb/blob/main/internal/generator/generator.go
 func recode(from, to proto.Message) error {
 	data, err := protojson.Marshal(from)
 	if err != nil {
@@ -128,11 +133,81 @@ func recode(from, to proto.Message) error {
 }
 
 func recodeToValue(from proto.Message) (*structpb.Value, error) {
-	v := new(structpb.Value)
-	if err := recode(from, v); err != nil {
-		return nil, err
+	return messageToValue(from.ProtoReflect())
+}
+
+func messageToValue(msg protoreflect.Message) (*structpb.Value, error) {
+	fields := make(map[string]*structpb.Value)
+	var rangeErr error
+
+	msg.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		fieldValue, err := valueToStructValue(fd, v)
+		if err != nil {
+			rangeErr = err
+			return false
+		}
+		fields[string(fd.Name())] = fieldValue
+		return true
+	})
+
+	if rangeErr != nil {
+		return nil, rangeErr
 	}
-	return v, nil
+
+	return structpb.NewStructValue(&structpb.Struct{
+		Fields: fields,
+	}), nil
+}
+
+func valueToStructValue(fd protoreflect.FieldDescriptor, v protoreflect.Value) (*structpb.Value, error) {
+	switch fd.Kind() {
+	case protoreflect.BoolKind:
+		return structpb.NewBoolValue(v.Bool()), nil
+	case protoreflect.Int32Kind, protoreflect.Int64Kind, protoreflect.Sint32Kind, protoreflect.Sint64Kind, protoreflect.Sfixed32Kind, protoreflect.Sfixed64Kind:
+		return structpb.NewNumberValue(float64(v.Int())), nil
+	case protoreflect.Uint32Kind, protoreflect.Uint64Kind, protoreflect.Fixed32Kind, protoreflect.Fixed64Kind:
+		return structpb.NewNumberValue(float64(v.Uint())), nil
+	case protoreflect.FloatKind, protoreflect.DoubleKind:
+		return structpb.NewNumberValue(v.Float()), nil
+	case protoreflect.StringKind:
+		return structpb.NewStringValue(v.String()), nil
+	case protoreflect.BytesKind:
+		return structpb.NewStringValue(base64.StdEncoding.EncodeToString(v.Bytes())), nil
+	case protoreflect.MessageKind:
+		if fd.IsList() {
+			list := v.List()
+			values := make([]*structpb.Value, list.Len())
+			for i := 0; i < list.Len(); i++ {
+				itemValue, err := messageToValue(list.Get(i).Message())
+				if err != nil {
+					return nil, err
+				}
+				values[i] = itemValue
+			}
+			return structpb.NewListValue(&structpb.ListValue{Values: values}), nil
+		} else if fd.IsMap() {
+			mapValue := v.Map()
+			fields := make(map[string]*structpb.Value)
+			mapValue.Range(func(mk protoreflect.MapKey, mv protoreflect.Value) bool {
+				keyStr := mk.String()
+				valueStruct, err := valueToStructValue(fd.MapValue(), mv)
+				if err != nil {
+					return false
+				}
+				fields[keyStr] = valueStruct
+				return true
+			})
+			return structpb.NewStructValue(&structpb.Struct{Fields: fields}), nil
+		} else {
+			return messageToValue(v.Message())
+		}
+	case protoreflect.EnumKind:
+		enumDesc := fd.Enum()
+		enumValue := enumDesc.Values().ByNumber(v.Enum())
+		return structpb.NewStringValue(string(enumValue.Name())), nil
+	default:
+		return structpb.NewNullValue(), nil
+	}
 }
 func extractAuxData(m map[string]*structpb.Value) (*requestv1.AuxData, error) {
 	var auxData *structpb.Value
