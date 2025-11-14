@@ -26,7 +26,7 @@ file,requests/access_evaluation/req01_XX125_approve.json;
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
-jsonpath "$.decision" == false
+jsonpath "$.decision" not exists
 jsonpath "$.context.id" == "test"
 jsonpath "$.context.reasonUser.properties['cerbos.response']" exists
 
@@ -37,7 +37,7 @@ file,requests/access_evaluation/req01_XX125_create.json;
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
-jsonpath "$.decision" == false
+jsonpath "$.decision" not exists
 jsonpath "$.context.id" == "test"
 jsonpath "$.context.reasonUser.properties['cerbos.response']" exists
 
@@ -70,7 +70,7 @@ file,requests/access_evaluation/req01_XX150_approve.json;
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
-jsonpath "$.decision" == false
+jsonpath "$.decision" not exists
 jsonpath "$.context.id" == "test"
 jsonpath "$.context.reasonUser.properties['cerbos.response']" exists
 
@@ -81,7 +81,7 @@ file,requests/access_evaluation/req01_XX150_create.json;
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
-jsonpath "$.decision" == false
+jsonpath "$.decision" not exists
 jsonpath "$.context.id" == "test"
 jsonpath "$.context.reasonUser.properties['cerbos.response']" exists
 
@@ -136,7 +136,7 @@ file,requests/access_evaluation/req02_XX225_delete.json;
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
-jsonpath "$.decision" == false
+jsonpath "$.decision" not exists
 jsonpath "$.context.id" == "test"
 jsonpath "$.context.reasonUser.properties['cerbos.response']" exists
 
@@ -158,7 +158,7 @@ file,requests/access_evaluation/bad_req01_XX125_view_public.json;
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
-jsonpath "$.decision" == false
+jsonpath "$.decision" not exists
 jsonpath "$.context.id" == "test"
 jsonpath "$.context.reasonUser.properties['cerbos.response']" exists
 
@@ -169,7 +169,7 @@ file,requests/access_evaluation/bad_req01_XX125_approve.json;
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
-jsonpath "$.decision" == false
+jsonpath "$.decision" not exists
 jsonpath "$.context.id" == "test"
 jsonpath "$.context.reasonUser.properties['cerbos.response']" exists
 
@@ -180,7 +180,7 @@ file,requests/access_evaluation/bad_req01_XX125_create.json;
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
-jsonpath "$.decision" == false
+jsonpath "$.decision" not exists
 jsonpath "$.context.id" == "test"
 jsonpath "$.context.reasonUser.properties['cerbos.response']" exists
 
@@ -191,7 +191,7 @@ file,requests/access_evaluation/bad_req01_XX125_defer.json;
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
-jsonpath "$.decision" == false
+jsonpath "$.decision" not exists
 jsonpath "$.context.id" == "test"
 jsonpath "$.context.reasonUser.properties['cerbos.response']" exists
 
@@ -202,7 +202,7 @@ file,requests/access_evaluation/bad_req01_XX150_view_public.json;
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
-jsonpath "$.decision" == false
+jsonpath "$.decision" not exists
 jsonpath "$.context.id" == "test"
 jsonpath "$.context.reasonUser.properties['cerbos.response']" exists
 
@@ -213,7 +213,7 @@ file,requests/access_evaluation/bad_req01_XX150_approve.json;
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
-jsonpath "$.decision" == false
+jsonpath "$.decision" not exists
 jsonpath "$.context.id" == "test"
 jsonpath "$.context.reasonUser.properties['cerbos.response']" exists
 
@@ -224,6 +224,6 @@ file,requests/access_evaluation/bad_req01_XX150_create.json;
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
-jsonpath "$.decision" == false
+jsonpath "$.decision" not exists
 jsonpath "$.context.id" == "test"
 jsonpath "$.context.reasonUser.properties['cerbos.response']" exists

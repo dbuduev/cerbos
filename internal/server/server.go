@@ -87,6 +87,7 @@ const (
 
 	adminEndpoint      = "/admin"
 	apiEndpoint        = "/api"
+	authzenEndpont     = "/access"
 	healthEndpoint     = "/_cerbos/health"
 	metricsEndpoint    = "/_cerbos/metrics"
 	playgroundEndpoint = "/api/playground"
@@ -402,6 +403,11 @@ func (s *Server) startHTTPServer(ctx context.Context, l net.Listener, grpcSrv *g
 		return nil, fmt.Errorf("failed to register Cerbos HTTP service: %w", err)
 	}
 
+	if err := authzenv1.RegisterAuthorizationServiceHandler(ctx, gwmux, grpcConn); err != nil {
+		log.Errorw("Failed to register AuthZen HTTP service", "error", err)
+		return nil, fmt.Errorf("failed to register AuthZen HTTP service: %w", err)
+	}
+
 	if s.conf.AdminAPI.Enabled {
 		if err := svcv1.RegisterCerbosAdminServiceHandler(ctx, gwmux, grpcConn); err != nil {
 			log.Errorw("Failed to register Cerbos admin HTTP service", "error", err)
@@ -423,6 +429,7 @@ func (s *Server) startHTTPServer(ctx context.Context, l net.Listener, grpcSrv *g
 
 	cerbosMux.PathPrefix(adminEndpoint).Handler(tracing.HTTPHandler(prettyJSON(gwmux), adminEndpoint))
 	cerbosMux.PathPrefix(apiEndpoint).Handler(tracing.HTTPHandler(prettyJSON(gwmux), apiEndpoint))
+	cerbosMux.PathPrefix(authzenEndpont).Handler(tracing.HTTPHandler(prettyJSON(gwmux), authzenEndpont))
 	cerbosMux.Path(healthEndpoint).Handler(prettyJSON(gwmux))
 	cerbosMux.Path(schemaEndpoint).HandlerFunc(schema.ServeSvcSwagger)
 

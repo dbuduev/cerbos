@@ -32,9 +32,7 @@ func NewAuthzenAuthorizationService(svc *CerbosService) *AuthzenAuthorizationSer
 
 // AccessEvaluation implements authorizationv1.AuthorizationServiceServer.
 func (aas *AuthzenAuthorizationService) AccessEvaluation(ctx context.Context, r *svcv1.AccessEvaluationRequest) (*svcv1.AccessEvaluationResponse, error) {
-	// _log := logging.ReqScopeLog(ctx)
 	req, err := toCheckResourcesRequest(r)
-
 	if err != nil {
 		return nil, err
 	}
@@ -73,10 +71,15 @@ func lookupOrEmptyString(m map[string]*structpb.Value, k string) string {
 	return ""
 }
 func toCheckResourcesRequest(req *svcv1.AccessEvaluationRequest) (*requestv1.CheckResourcesRequest, error) {
+	auxData, err := extractAuxData(req.GetContext())
+	if err != nil {
+		return nil, err
+	}
 	return &requestv1.CheckResourcesRequest{
 		RequestId:   lookupOrEmptyString(req.GetContext(), "requestId"),
 		IncludeMeta: true,
 		Principal:   toPrincipal(req.Subject),
+		AuxData:     auxData,
 		Resources: []*requestv1.CheckResourcesRequest_ResourceEntry{{
 			Actions:  []string{req.Action.GetName()},
 			Resource: toResource(req.Resource),
