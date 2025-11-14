@@ -120,18 +120,6 @@ func toPrincipal(subj *svcv1.AccessEvaluationRequest_Subject) *enginev1.Principa
 	}
 }
 
-// TODO: consider using protobuf reflection instead
-// See:
-// https://pkg.go.dev/google.golang.org/protobuf@v1.36.10/reflect/protorange
-// https://github.com/cerbos/protoc-gen-go-hashpb/blob/main/internal/generator/generator.go
-func recode(from, to proto.Message) error {
-	data, err := protojson.Marshal(from)
-	if err != nil {
-		return err
-	}
-	return protojson.Unmarshal(data, to)
-}
-
 func recodeToValue(from proto.Message) (*structpb.Value, error) {
 	return messageToValue(from.ProtoReflect())
 }
@@ -209,14 +197,141 @@ func valueToStructValue(fd protoreflect.FieldDescriptor, v protoreflect.Value) (
 		return structpb.NewNullValue(), nil
 	}
 }
+func valueToMessage(value *structpb.Value, msg protoreflect.Message) error {
+	switch v := value.GetKind().(type) {
+	case *structpb.Value_StructValue:
+		return structToMessage(v.StructValue, msg)
+	case *structpb.Value_NullValue:
+		return nil
+	default:
+		return fmt.Errorf("expected struct value for message, got %T", value.GetKind())
+	}
+}
+func structToMessage(s *structpb.Struct, msg protoreflect.Message) error {
+	msgDesc := msg.Descriptor()
+
+	for fieldName, fieldValue := range s.GetFields() {
+		fieldDesc := msgDesc.Fields().ByName(protoreflect.Name(fieldName))
+		if fieldDesc == nil {
+			continue
+		}
+
+		protoValue, err := structValueToProtoValue(fieldValue, fieldDesc, msg)
+		if err != nil {
+			return fmt.Errorf("failed to convert field %s: %w", fieldName, err)
+		}
+
+		msg.Set(fieldDesc, protoValue)
+	}
+
+	return nil
+}
+
+func structValueToProtoValue(value *structpb.Value, fd protoreflect.FieldDescriptor, msg protoreflect.Message) (protoreflect.Value, error) {
+	switch fd.Kind() {
+	case protoreflect.BoolKind:
+		return protoreflect.ValueOfBool(value.GetBoolValue()), nil
+
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
+		return protoreflect.ValueOfInt32(int32(value.GetNumberValue())), nil
+
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
+		return protoreflect.ValueOfInt64(int64(value.GetNumberValue())), nil
+
+	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		return protoreflect.ValueOfUint32(uint32(value.GetNumberValue())), nil
+
+	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		return protoreflect.ValueOfUint64(uint64(value.GetNumberValue())), nil
+
+	case protoreflect.FloatKind:
+		return protoreflect.ValueOfFloat32(float32(value.GetNumberValue())), nil
+
+	case protoreflect.DoubleKind:
+		return protoreflect.ValueOfFloat64(value.GetNumberValue()), nil
+
+	case protoreflect.StringKind:
+		return protoreflect.ValueOfString(value.GetStringValue()), nil
+
+	case protoreflect.BytesKind:
+		data, err := base64.StdEncoding.DecodeString(value.GetStringValue())
+		if err != nil {
+			return protoreflect.Value{}, fmt.Errorf("invalid base64 for bytes field: %w", err)
+		}
+		return protoreflect.ValueOfBytes(data), nil
+
+	case protoreflect.MessageKind:
+		if fd.IsList() {
+			listValue := value.GetListValue()
+			if listValue == nil {
+				return msg.NewField(fd), nil
+			}
+
+			list := msg.NewField(fd).List()
+			for _, item := range listValue.GetValues() {
+				itemMsg := list.NewElement()
+				if err := valueToMessage(item, itemMsg.Message()); err != nil {
+					return protoreflect.Value{}, err
+				}
+				list.Append(itemMsg)
+			}
+			return protoreflect.ValueOfList(list), nil
+
+		} else if fd.IsMap() {
+			structValue := value.GetStructValue()
+			if structValue == nil {
+				return msg.NewField(fd), nil
+			}
+
+			mapValue := msg.NewField(fd).Map()
+			for k, v := range structValue.GetFields() {
+				var mapKey protoreflect.MapKey
+				switch fd.MapKey().Kind() {
+				case protoreflect.StringKind:
+					mapKey = protoreflect.ValueOfString(k).MapKey()
+				default:
+					return protoreflect.Value{}, fmt.Errorf("unsupported map key type: %s", fd.MapKey().Kind())
+				}
+
+				mapVal, err := structValueToProtoValue(v, fd.MapValue(), msg)
+				if err != nil {
+					return protoreflect.Value{}, err
+				}
+				mapValue.Set(mapKey, mapVal)
+			}
+			return protoreflect.ValueOfMap(mapValue), nil
+
+		} else {
+			// Regular message
+			newMsg := msg.NewField(fd)
+			if err := valueToMessage(value, newMsg.Message()); err != nil {
+				return protoreflect.Value{}, err
+			}
+			return newMsg, nil
+		}
+
+	case protoreflect.EnumKind:
+		enumDesc := fd.Enum()
+		enumValue := enumDesc.Values().ByName(protoreflect.Name(value.GetStringValue()))
+		if enumValue == nil {
+			return protoreflect.ValueOfEnum(0), nil // default to first enum value
+		}
+		return protoreflect.ValueOfEnum(enumValue.Number()), nil
+
+	default:
+		return protoreflect.Value{}, fmt.Errorf("unsupported field kind: %s", fd.Kind())
+	}
+}
+
 func extractAuxData(m map[string]*structpb.Value) (*requestv1.AuxData, error) {
 	var auxData *structpb.Value
-	cAuxData := new(requestv1.AuxData)
 	var ok bool
 	if auxData, ok = m["auxData"]; !ok {
 		return nil, nil
 	}
-	err := recode(auxData, cAuxData)
+
+	cAuxData := new(requestv1.AuxData)
+	err := valueToMessage(auxData, cAuxData.ProtoReflect())
 	if err != nil {
 		return nil, fmt.Errorf("can't extract auxData: %w", err)
 	}
