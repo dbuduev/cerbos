@@ -226,6 +226,29 @@ func (s *rowSet) intersectWith(o *rowSet) *rowSet {
 	return res
 }
 
+// intersectRows returns the rows that exist in both sets as a slice.
+// This is more efficient than intersectWith(...).rows() as it avoids
+// allocating an intermediate rowSet and map.
+func (s *rowSet) intersectRows(o *rowSet) []*Row {
+	if len(s.getM()) == 0 || len(o.getM()) == 0 {
+		return nil
+	}
+
+	small, large := s, o
+	if len(o.m) < len(s.m) {
+		small, large = o, s
+	}
+
+	res := make([]*Row, 0, len(small.m))
+	for _, r := range small.m {
+		if _, ok := large.m[r.sum]; ok {
+			res = append(res, r)
+		}
+	}
+
+	return res
+}
+
 // hasIntersectionWith returns true if there is any overlap between two rowSets.
 // Returns early on first match, avoiding allocation when just checking for existence.
 func (s *rowSet) hasIntersectionWith(o *rowSet) bool {
@@ -540,7 +563,7 @@ func (m *Impl) GetRows(ctx context.Context, version, resource string, scopes, ro
 
 			if literalActionSet, ok := literalActionSets[allowActionsIdxKey]; ok { //nolint:nestif
 				if literalActionSet.hasIntersectionWith(roleSet) {
-					ars := literalActionSet.intersectWith(roleSet).rows()
+					ars := literalActionSet.intersectRows(roleSet)
 					actionMatchedRows := util.NewGlobMap(make(map[string][]*Row))
 					// retrieve actions mapped to all effectual rows
 					resolved, err := m.idx.resolve(ctx, ars)
@@ -623,7 +646,7 @@ func (m *Impl) GetRows(ctx context.Context, version, resource string, scopes, ro
 				if !ok {
 					continue
 				}
-				for _, r := range actionSet.intersectWith(roleSet).rows() {
+				for _, r := range actionSet.intersectRows(roleSet) {
 					if !resSet.has(r.sum) {
 						resSet.set(r)
 						res = append(res, r)
