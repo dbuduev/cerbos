@@ -22,7 +22,7 @@ import (
 
 var errUsedDefaultNow = errors.New("a policy used a time-based condition, but `now` was not provided in the test options")
 
-func runTestSuite(ctx context.Context, eng Checker, filter *testFilter, file string, suite *policyv1.TestSuite, fixture *TestFixture, trace, batching bool) *policyv1.TestResults_Suite {
+func runTestSuite(ctx context.Context, eng Checker, filter *testFilter, file string, suite *policyv1.TestSuite, fixture *TestFixture, trace, batching bool, maxActionsPerBatch uint) *policyv1.TestResults_Suite {
 	summary := &policyv1.TestResults_Summary{}
 	results := &policyv1.TestResults_Suite{
 		File:        file,
@@ -84,9 +84,17 @@ func runTestSuite(ctx context.Context, eng Checker, filter *testFilter, file str
 		}
 
 		if batching {
-			actionResults := runTestBatched(ctx, eng, test, trace)
-			for _, action := range test.Input.Actions {
-				addResult(results, test.Name, action, actionResults[action])
+			// Run actions in batches up to maxActionsPerBatch
+			actions := test.Input.Actions
+			for len(actions) > 0 {
+				batchSize := min(int(maxActionsPerBatch), len(actions))
+				batch := actions[:batchSize]
+				actions = actions[batchSize:]
+
+				actionResults := runTestBatched(ctx, eng, test, batch, trace)
+				for _, action := range batch {
+					addResult(results, test.Name, action, actionResults[action])
+				}
 			}
 		} else {
 			for _, action := range test.Input.Actions {
@@ -259,21 +267,23 @@ func (r *testSuiteRun) lookupAuxData(name string) (*enginev1.AuxData, error) {
 	return nil, fmt.Errorf("auxData %q not found", name)
 }
 
-func runTestBatched(ctx context.Context, eng Checker, test *policyv1.Test, trace bool) map[string]*policyv1.TestResults_Details {
-	results := make(map[string]*policyv1.TestResults_Details, len(test.Input.Actions))
+// runTestBatched runs the specified actions for a test in a single engine call.
+// This is more efficient but outputs from all actions are combined in the results.
+func runTestBatched(ctx context.Context, eng Checker, test *policyv1.Test, actions []string, trace bool) map[string]*policyv1.TestResults_Details {
+	results := make(map[string]*policyv1.TestResults_Details, len(actions))
 
 	inputs := []*enginev1.CheckInput{{
 		RequestId: test.Input.RequestId,
 		Resource:  test.Input.Resource,
 		Principal: test.Input.Principal,
-		Actions:   test.Input.Actions,
+		Actions:   actions,
 		AuxData:   test.Input.AuxData,
 	}}
 
 	actual, traces, err := performCheck(ctx, eng, inputs, test.Options, trace)
 
 	if err != nil {
-		for _, action := range test.Input.Actions {
+		for _, action := range actions {
 			results[action] = &policyv1.TestResults_Details{
 				Result:      policyv1.TestResults_RESULT_ERRORED,
 				EngineTrace: traces,
@@ -284,7 +294,7 @@ func runTestBatched(ctx context.Context, eng Checker, test *policyv1.Test, trace
 	}
 
 	if len(actual) == 0 {
-		for _, action := range test.Input.Actions {
+		for _, action := range actions {
 			results[action] = &policyv1.TestResults_Details{
 				Result:      policyv1.TestResults_RESULT_ERRORED,
 				EngineTrace: traces,
@@ -299,7 +309,7 @@ func runTestBatched(ctx context.Context, eng Checker, test *policyv1.Test, trace
 		actualOutputs[output.Src] = output.Val
 	}
 
-	for _, action := range test.Input.Actions {
+	for _, action := range actions {
 		details := &policyv1.TestResults_Details{EngineTrace: traces}
 
 		expectedEffect := test.Expected[action]
