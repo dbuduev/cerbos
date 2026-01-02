@@ -76,11 +76,22 @@ func BenchmarkVerify(b *testing.B) {
 	eng := engine.NewEphemeral(nil, ruletableMgr, schemaMgr)
 
 	b.Logf("Setup took %s", time.Since(setupStart))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, err := Verify(ctx, fsys, eng, Config{Trace: false})
-		if err != nil {
-			b.Fatalf("verify failed: %v", err)
-		}
+
+	for _, trace := range []bool{false, true} {
+		b.Run(traceName(trace), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_, err := Verify(ctx, fsys, eng, Config{Trace: trace})
+				if err != nil {
+					b.Fatalf("verify failed: %v", err)
+				}
+			}
+		})
 	}
+}
+
+func traceName(trace bool) string {
+	if trace {
+		return "Trace"
+	}
+	return "NoTrace"
 }
