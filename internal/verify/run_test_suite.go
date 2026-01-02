@@ -1,4 +1,4 @@
-// Copyright 2021-2025 Zenauth Ltd.
+// Copyright 2021-2026 Zenauth Ltd.
 // SPDX-License-Identifier: Apache-2.0
 
 package verify
@@ -83,18 +83,19 @@ func runTestSuite(ctx context.Context, eng Checker, filter *testFilter, file str
 			continue
 		}
 
-		// Use batching if enabled and the test has no output expectations.
-		// Output expectations require per-action calls because outputs differ per action.
-		useBatching := batching && len(test.ExpectedOutputs) == 0
+		useBatching := batching &&
+			len(test.Input.Actions) > 1 &&
+			len(test.ExpectedOutputs) == 0
 
 		if useBatching {
-			actionResults := runTestBatched(ctx, eng, test, test.Input.Actions, trace)
+			actionResults := runTest(ctx, eng, test, test.Input.Actions, trace)
 			for _, action := range test.Input.Actions {
 				addResult(results, test.Name, action, actionResults[action])
 			}
 		} else {
 			for _, action := range test.Input.Actions {
-				addResult(results, test.Name, action, runTest(ctx, eng, test, action, trace))
+				actionResults := runTest(ctx, eng, test, []string{action}, trace)
+				addResult(results, test.Name, action, actionResults[action])
 			}
 		}
 	}
@@ -263,9 +264,7 @@ func (r *testSuiteRun) lookupAuxData(name string) (*enginev1.AuxData, error) {
 	return nil, fmt.Errorf("auxData %q not found", name)
 }
 
-// runTestBatched runs the specified actions for a test in a single engine call.
-// This is more efficient but outputs from all actions are combined in the results.
-func runTestBatched(ctx context.Context, eng Checker, test *policyv1.Test, actions []string, trace bool) map[string]*policyv1.TestResults_Details {
+func runTest(ctx context.Context, eng Checker, test *policyv1.Test, actions []string, trace bool) map[string]*policyv1.TestResults_Details {
 	results := make(map[string]*policyv1.TestResults_Details, len(actions))
 
 	inputs := []*enginev1.CheckInput{{
@@ -277,7 +276,6 @@ func runTestBatched(ctx context.Context, eng Checker, test *policyv1.Test, actio
 	}}
 
 	actual, traces, err := performCheck(ctx, eng, inputs, test.Options, trace)
-
 	if err != nil {
 		for _, action := range actions {
 			results[action] = &policyv1.TestResults_Details{
@@ -377,115 +375,19 @@ func runTestBatched(ctx context.Context, eng Checker, test *policyv1.Test, actio
 		}
 
 		details.Result = policyv1.TestResults_RESULT_PASSED
+		success := &policyv1.TestResults_Success{
+			Effect: actionResult.Effect,
+		}
 		details.Outcome = &policyv1.TestResults_Details_Success{
-			Success: &policyv1.TestResults_Success{
-				Effect: actionResult.Effect,
-				// Outputs omitted in batched mode as they contain combined outputs from all actions.
-			},
+			Success: success,
+		}
+		if len(actions) == 1 {
+			success.Outputs = actual[0].Outputs
 		}
 		results[action] = details
 	}
 
 	return results
-}
-
-func runTest(ctx context.Context, eng Checker, test *policyv1.Test, action string, trace bool) *policyv1.TestResults_Details {
-	details := &policyv1.TestResults_Details{}
-
-	inputs := []*enginev1.CheckInput{{
-		RequestId: test.Input.RequestId,
-		Resource:  test.Input.Resource,
-		Principal: test.Input.Principal,
-		Actions:   []string{action},
-		AuxData:   test.Input.AuxData,
-	}}
-
-	actual, traces, err := performCheck(ctx, eng, inputs, test.Options, trace)
-	details.EngineTrace = traces
-
-	if err != nil {
-		details.Result = policyv1.TestResults_RESULT_ERRORED
-		details.Outcome = &policyv1.TestResults_Details_Error{Error: err.Error()}
-		return details
-	}
-
-	if len(actual) == 0 {
-		details.Result = policyv1.TestResults_RESULT_ERRORED
-		details.Outcome = &policyv1.TestResults_Details_Error{Error: "Empty response from server"}
-		return details
-	}
-
-	expectedEffect := test.Expected[action]
-	if expectedEffect == effectv1.Effect_EFFECT_UNSPECIFIED {
-		expectedEffect = effectv1.Effect_EFFECT_DENY
-	}
-
-	if expectedEffect != actual[0].Actions[action].Effect {
-		details.Result = policyv1.TestResults_RESULT_FAILED
-		details.Outcome = &policyv1.TestResults_Details_Failure{
-			Failure: &policyv1.TestResults_Failure{
-				Expected: expectedEffect,
-				Actual:   actual[0].Actions[action].Effect,
-			},
-		}
-		return details
-	}
-
-	if expectedOutputs, ok := test.ExpectedOutputs[action]; ok {
-		actualOutputs := make(map[string]*structpb.Value, len(actual[0].Outputs))
-		for _, output := range actual[0].Outputs {
-			actualOutputs[output.Src] = output.Val
-		}
-
-		var failures []*policyv1.TestResults_OutputFailure
-		for wantKey, wantValue := range expectedOutputs.Entries {
-			haveValue, ok := actualOutputs[wantKey]
-			if !ok {
-				failures = append(failures, &policyv1.TestResults_OutputFailure{
-					Src: wantKey,
-					Outcome: &policyv1.TestResults_OutputFailure_Missing{
-						Missing: &policyv1.TestResults_OutputFailure_MissingValue{
-							Expected: wantValue,
-						},
-					},
-				})
-				continue
-			}
-
-			if !cmp.Equal(wantValue, haveValue, protocmp.Transform()) {
-				failures = append(failures, &policyv1.TestResults_OutputFailure{
-					Src: wantKey,
-					Outcome: &policyv1.TestResults_OutputFailure_Mismatched{
-						Mismatched: &policyv1.TestResults_OutputFailure_MismatchedValue{
-							Actual:   haveValue,
-							Expected: wantValue,
-						},
-					},
-				})
-			}
-		}
-
-		if len(failures) > 0 {
-			details.Result = policyv1.TestResults_RESULT_FAILED
-			details.Outcome = &policyv1.TestResults_Details_Failure{
-				Failure: &policyv1.TestResults_Failure{
-					Expected: expectedEffect,
-					Actual:   actual[0].Actions[action].Effect,
-					Outputs:  failures,
-				},
-			}
-			return details
-		}
-	}
-
-	details.Result = policyv1.TestResults_RESULT_PASSED
-	details.Outcome = &policyv1.TestResults_Details_Success{
-		Success: &policyv1.TestResults_Success{
-			Effect:  actual[0].Actions[action].Effect,
-			Outputs: actual[0].Outputs,
-		},
-	}
-	return details
 }
 
 func performCheck(ctx context.Context, eng Checker, inputs []*enginev1.CheckInput, options *policyv1.TestOptions, trace bool) (_ []*enginev1.CheckOutput, traces []*enginev1.Trace, _ error) {
