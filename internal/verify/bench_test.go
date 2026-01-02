@@ -1,4 +1,4 @@
-// Copyright 2021-2025 Zenauth Ltd.
+// Copyright 2021-2026 Zenauth Ltd.
 // SPDX-License-Identifier: Apache-2.0
 
 package verify
@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -28,7 +27,6 @@ func BenchmarkVerify(b *testing.B) {
 		b.Skip("CERBOS_BENCH_DIR environment variable not set")
 	}
 
-	// Convert to absolute path if relative
 	if !filepath.IsAbs(benchDir) {
 		absDir, err := filepath.Abs(benchDir)
 		if err != nil {
@@ -40,48 +38,38 @@ func BenchmarkVerify(b *testing.B) {
 	ctx := context.Background()
 	fsys := os.DirFS(benchDir)
 
-	setupStart := time.Now()
-
-	// Build index from the directory
 	idx, err := index.Build(ctx, fsys, index.WithBuildFailureLogLevel(zap.DebugLevel))
 	if err != nil {
 		b.Fatalf("failed to build index: %v", err)
 	}
 
-	// Create disk store from index
 	store := disk.NewFromIndexWithConf(idx, &disk.Conf{})
 
-	// Create compiler manager
 	compiler, err := compile.NewManager(ctx, store)
 	if err != nil {
 		b.Fatalf("failed to create compiler manager: %v", err)
 	}
 
-	// Create rule table
 	ruleTable, err := ruletable.NewRuleTableFromLoader(ctx, compiler)
 	if err != nil {
 		b.Fatalf("failed to create rule table: %v", err)
 	}
 
-	// Create schema manager
 	schemaMgr := schema.NewFromConf(ctx, store, schema.NewConf(schema.EnforcementReject))
 
-	// Create rule table manager
 	ruletableMgr, err := ruletable.NewRuleTableManager(ruleTable, compiler, schemaMgr)
 	if err != nil {
 		b.Fatalf("failed to create ruletable manager: %v", err)
 	}
 
-	// Create engine
 	eng := engine.NewEphemeral(nil, ruletableMgr, schemaMgr)
 
-	b.Logf("Setup took %s", time.Since(setupStart))
-
 	for _, batching := range []bool{false, true} {
-		for _, trace := range []bool{false, true} {
+		for _, trace := range []bool{true} {
 			name := modeName(trace, batching)
 			b.Run(name, func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
+				b.ReportAllocs()
+				for b.Loop() {
 					_, err := Verify(ctx, fsys, eng, Config{Trace: trace, Batching: batching})
 					if err != nil {
 						b.Fatalf("verify failed: %v", err)
