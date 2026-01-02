@@ -18,19 +18,14 @@ import (
 	"github.com/cerbos/cerbos/internal/validator"
 )
 
-const defaultMaxActionsPerBatch = 50
-
 type Config struct {
 	ExcludedResourcePolicyFQNs  map[string]struct{}
 	ExcludedPrincipalPolicyFQNs map[string]struct{}
 	IncludedTestNamesRegexp     string
 	Trace                       bool
-	// Batching enables batching actions into a single engine call.
-	// Not to be used when testing outputs as they are combined for all actions in the batch.
+	// Batching enables batching actions into a single engine call for tests without output expectations.
+	// This improves performance but omits per-action outputs from test results.
 	Batching bool
-	// MaxActionsPerBatch limits the number of actions per engine call when batching.
-	// Defaults to 50 if not set.
-	MaxActionsPerBatch uint
 }
 
 type Checker interface {
@@ -137,11 +132,7 @@ func Verify(ctx context.Context, fsys fs.FS, eng Checker, conf Config) (*policyv
 			}
 		}
 
-		maxActions := conf.MaxActionsPerBatch
-		if maxActions == 0 {
-			maxActions = defaultMaxActionsPerBatch
-		}
-		return runTestSuite(ctx, eng, testFilter, file, suite, fixture, conf.Trace, conf.Batching, maxActions)
+		return runTestSuite(ctx, eng, testFilter, file, suite, fixture, conf.Trace, conf.Batching)
 	}
 
 	results := &policyv1.TestResults{

@@ -22,7 +22,7 @@ import (
 
 var errUsedDefaultNow = errors.New("a policy used a time-based condition, but `now` was not provided in the test options")
 
-func runTestSuite(ctx context.Context, eng Checker, filter *testFilter, file string, suite *policyv1.TestSuite, fixture *TestFixture, trace, batching bool, maxActionsPerBatch uint) *policyv1.TestResults_Suite {
+func runTestSuite(ctx context.Context, eng Checker, filter *testFilter, file string, suite *policyv1.TestSuite, fixture *TestFixture, trace, batching bool) *policyv1.TestResults_Suite {
 	summary := &policyv1.TestResults_Summary{}
 	results := &policyv1.TestResults_Suite{
 		File:        file,
@@ -83,18 +83,14 @@ func runTestSuite(ctx context.Context, eng Checker, filter *testFilter, file str
 			continue
 		}
 
-		if batching {
-			// Run actions in batches up to maxActionsPerBatch
-			actions := test.Input.Actions
-			for len(actions) > 0 {
-				batchSize := min(int(maxActionsPerBatch), len(actions))
-				batch := actions[:batchSize]
-				actions = actions[batchSize:]
+		// Use batching if enabled and the test has no output expectations.
+		// Output expectations require per-action calls because outputs differ per action.
+		useBatching := batching && len(test.ExpectedOutputs) == 0
 
-				actionResults := runTestBatched(ctx, eng, test, batch, trace)
-				for _, action := range batch {
-					addResult(results, test.Name, action, actionResults[action])
-				}
+		if useBatching {
+			actionResults := runTestBatched(ctx, eng, test, test.Input.Actions, trace)
+			for _, action := range test.Input.Actions {
+				addResult(results, test.Name, action, actionResults[action])
 			}
 		} else {
 			for _, action := range test.Input.Actions {
@@ -383,8 +379,8 @@ func runTestBatched(ctx context.Context, eng Checker, test *policyv1.Test, actio
 		details.Result = policyv1.TestResults_RESULT_PASSED
 		details.Outcome = &policyv1.TestResults_Details_Success{
 			Success: &policyv1.TestResults_Success{
-				Effect:  actionResult.Effect,
-				Outputs: actual[0].Outputs,
+				Effect: actionResult.Effect,
+				// Outputs omitted in batched mode as they contain combined outputs from all actions.
 			},
 		}
 		results[action] = details
