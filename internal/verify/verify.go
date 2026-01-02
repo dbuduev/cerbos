@@ -23,6 +23,8 @@ type Config struct {
 	ExcludedPrincipalPolicyFQNs map[string]struct{}
 	IncludedTestNamesRegexp     string
 	Trace                       bool
+	// Batching actions not to be used when testing outputs as they are combined for all actions in the batch
+	Batching bool
 }
 
 type Checker interface {
@@ -129,7 +131,7 @@ func Verify(ctx context.Context, fsys fs.FS, eng Checker, conf Config) (*policyv
 			}
 		}
 
-		return runTestSuite(ctx, eng, testFilter, file, suite, fixture, conf.Trace)
+		return runTestSuite(ctx, eng, testFilter, file, suite, fixture, conf.Trace, conf.Batching)
 	}
 
 	results := &policyv1.TestResults{

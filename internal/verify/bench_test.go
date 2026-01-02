@@ -77,21 +77,28 @@ func BenchmarkVerify(b *testing.B) {
 
 	b.Logf("Setup took %s", time.Since(setupStart))
 
-	for _, trace := range []bool{false, true} {
-		b.Run(traceName(trace), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				_, err := Verify(ctx, fsys, eng, Config{Trace: trace})
-				if err != nil {
-					b.Fatalf("verify failed: %v", err)
+	for _, batching := range []bool{false, true} {
+		for _, trace := range []bool{false, true} {
+			name := modeName(trace, batching)
+			b.Run(name, func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					_, err := Verify(ctx, fsys, eng, Config{Trace: trace, Batching: batching})
+					if err != nil {
+						b.Fatalf("verify failed: %v", err)
+					}
 				}
-			}
-		})
+			})
+		}
 	}
 }
 
-func traceName(trace bool) string {
+func modeName(trace, batching bool) string {
+	name := "NoTrace"
 	if trace {
-		return "Trace"
+		name = "Trace"
 	}
-	return "NoTrace"
+	if batching {
+		name += "_Batched"
+	}
+	return name
 }
