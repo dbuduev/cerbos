@@ -30,8 +30,20 @@ PDP_METRICS=(
   go_memstats_heap_alloc_bytes
   go_memstats_heap_sys_bytes
   go_memstats_heap_inuse_bytes
+  go_memstats_heap_released_bytes
+  go_memstats_sys_bytes
   go_memstats_stack_inuse_bytes
   go_memstats_gc_sys_bytes
+)
+
+# Cumulative counters, diffed across a loaded phase (the legitimate use of before/after
+# scraping — counters have no peak to miss). GC CPU% = diff gc / diff total cpu-seconds.
+PDP_COUNTERS=(
+  go_cpu_classes_gc_total_cpu_seconds_total
+  go_cpu_classes_total_cpu_seconds_total
+  go_gc_duration_seconds_count
+  go_gc_duration_seconds_sum
+  go_memstats_alloc_bytes_total
 )
 
 # Scrape Cerbos metrics endpoint and output "metric_name integer_value" lines.
@@ -109,6 +121,65 @@ printMetricsDiff() {
     echo "{\"metrics\":[${joined}]}" | jq . > "$jsonFile"
     printf "Metrics saved to %s\n" "$jsonFile"
   fi
+}
+
+# Scrape cumulative counter metrics as raw float strings (diffed later, not formatted).
+# Args: $1 = output file. Returns non-zero if curl fails.
+scrapeCounters() {
+  local outFile="$1"
+  local raw
+  raw=$(curl -sf "$METRICS_URL") || return 1
+
+  > "$outFile"
+  for m in "${PDP_COUNTERS[@]}"; do
+    local val
+    val=$(echo "$raw" | grep "^${m} " | head -1 | awk '{print $2}')
+    if [[ -n "$val" ]]; then
+      echo "$m $val" >> "$outFile"
+    fi
+  done
+}
+
+# Read one counter value from a scrapeCounters output file. Args: $1=file $2=metric.
+counterVal() { grep "^${2} " "$1" 2>/dev/null | awk '{print $2}'; }
+
+# Print a per-phase GC-cost summary (GC CPU%, cycles, pause, bytes allocated) from
+# counter before/after files and write JSON. Args: $1=beforeFile $2=afterFile $3=jsonFile.
+printCounterDiff() {
+  local beforeFile="$1" afterFile="$2" jsonFile="$3"
+  local gcB gcA totB totA cntB cntA sumB sumA allocB allocA
+  gcB=$(counterVal "$beforeFile" go_cpu_classes_gc_total_cpu_seconds_total)
+  gcA=$(counterVal "$afterFile"  go_cpu_classes_gc_total_cpu_seconds_total)
+  totB=$(counterVal "$beforeFile" go_cpu_classes_total_cpu_seconds_total)
+  totA=$(counterVal "$afterFile"  go_cpu_classes_total_cpu_seconds_total)
+  cntB=$(counterVal "$beforeFile" go_gc_duration_seconds_count)
+  cntA=$(counterVal "$afterFile"  go_gc_duration_seconds_count)
+  sumB=$(counterVal "$beforeFile" go_gc_duration_seconds_sum)
+  sumA=$(counterVal "$afterFile"  go_gc_duration_seconds_sum)
+  allocB=$(counterVal "$beforeFile" go_memstats_alloc_bytes_total)
+  allocA=$(counterVal "$afterFile"  go_memstats_alloc_bytes_total)
+
+  printf "\nGC cost (this phase):\n"
+  if [[ -n "$gcA" && -n "$totA" && -n "$gcB" && -n "$totB" ]]; then
+    awk -v gcB="$gcB" -v gcA="$gcA" -v totB="$totB" -v totA="$totA" '
+      BEGIN { d=totA-totB; printf "  GC CPU:    %s%% (%.3f of %.3f cpu-s)\n",
+              (d>0 ? sprintf("%.2f", 100*(gcA-gcB)/d) : "n/a"), gcA-gcB, d }'
+  else
+    printf "  GC CPU:    (unavailable — go_cpu_classes_* not exposed; deploy the metrics.go extension)\n"
+  fi
+  [[ -n "$cntA" && -n "$cntB" ]]   && awk -v a="$cntA" -v b="$cntB" 'BEGIN{printf "  GC cycles: %d\n", a-b}'
+  [[ -n "$sumA" && -n "$sumB" ]]   && awk -v a="$sumA" -v b="$sumB" 'BEGIN{printf "  GC pause:  %.1f ms total\n", 1000*(a-b)}'
+  [[ -n "$allocA" && -n "$allocB" ]] && awk -v a="$allocA" -v b="$allocB" 'BEGIN{printf "  Allocated: %.0f bytes (%.1f MiB)\n", a-b, (a-b)/1048576}'
+
+  awk -v gcB="${gcB:-}" -v gcA="${gcA:-}" -v totB="${totB:-}" -v totA="${totA:-}" \
+      -v cntB="${cntB:-}" -v cntA="${cntA:-}" -v sumB="${sumB:-}" -v sumA="${sumA:-}" \
+      -v allocB="${allocB:-}" -v allocA="${allocA:-}" '
+    BEGIN {
+      dtot=totA-totB
+      printf "{\"gc_cpu_pct\":%s,\"gc_cpu_seconds\":%.4f,\"cpu_seconds\":%.4f,\"gc_cycles\":%d,\"gc_pause_ms\":%.3f,\"alloc_bytes\":%.0f}\n",
+        (dtot>0 ? sprintf("%.4f", 100*(gcA-gcB)/dtot) : "null"), gcA-gcB, dtot, cntA-cntB, 1000*(sumA-sumB), allocA-allocB
+    }' > "$jsonFile"
+  printf "GC metrics saved to %s\n" "$jsonFile"
 }
 
 clean() {
@@ -216,10 +287,12 @@ executeTest() {
       --duration "5s" \
       "${SERVER}" > /dev/null
 
-  local beforeFile afterFile metricsAvailable
+  local beforeFile afterFile counterBefore counterAfter metricsAvailable
   beforeFile=$(mktemp)
   afterFile=$(mktemp)
-  trap "rm -f \"$beforeFile\" \"$afterFile\"" EXIT INT TERM
+  counterBefore=$(mktemp)
+  counterAfter=$(mktemp)
+  trap "rm -f \"$beforeFile\" \"$afterFile\" \"$counterBefore\" \"$counterAfter\"" EXIT INT TERM
 
   # --- Sustained-rate test ---
   local estimatedCount=$((RPS * DURATION_SECS))
@@ -231,6 +304,7 @@ executeTest() {
 
   metricsAvailable=true
   scrapeMetrics "$beforeFile" || metricsAvailable=false
+  scrapeCounters "$counterBefore" || true
 
   { printf "Start: %s\n" "$(date '+%T')"; [[ -n "$cpuInfo" ]] && printf "%s\n" "$cpuInfo"; } | tee "${resultPrefix}_rps.txt"
 
@@ -256,6 +330,11 @@ executeTest() {
     fi
   fi
 
+  if scrapeCounters "$counterAfter" && [[ -s "$counterBefore" && -s "$counterAfter" ]]; then
+    printCounterDiff "$counterBefore" "$counterAfter" "${resultPrefix}_rps_gc.json" | \
+      tee -a "${resultPrefix}_rps.txt"
+  fi
+
   # Let GC settle before starting the next test
   printf "\nWaiting 10s for GC to settle...\n"
   sleep 10
@@ -268,6 +347,7 @@ executeTest() {
 
   metricsAvailable=true
   scrapeMetrics "$beforeFile" || metricsAvailable=false
+  scrapeCounters "$counterBefore" || true
 
   { printf "Start: %s\n" "$(date '+%T')"; [[ -n "$cpuInfo" ]] && printf "%s\n" "$cpuInfo"; } | tee "${resultPrefix}_throughput.txt"
 
@@ -290,6 +370,11 @@ executeTest() {
       printMetricsDiff "$beforeFile" "$afterFile" "${resultPrefix}_throughput_metrics.json" | \
         tee -a "${resultPrefix}_throughput.txt"
     fi
+  fi
+
+  if scrapeCounters "$counterAfter" && [[ -s "$counterBefore" && -s "$counterAfter" ]]; then
+    printCounterDiff "$counterBefore" "$counterAfter" "${resultPrefix}_throughput_gc.json" | \
+      tee -a "${resultPrefix}_throughput.txt"
   fi
 }
 
