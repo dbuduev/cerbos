@@ -77,21 +77,42 @@ require_running_vms() {
   done
 }
 
+# Restart Cerbos on the PDP VM. Honours env: GOMAXPROCS, GOGC, GOMEMLIMIT, and
+# CGROUP_LIMIT. When CGROUP_LIMIT (bytes) is set, Cerbos runs under a transient systemd
+# scope with MemoryMax = CGROUP_LIMIT and swap disabled — a *hard* cap (cgroup OOM-kills
+# on breach), the production-faithful pairing for GOMEMLIMIT (soft) a few % below it.
+# When unset, the plain nohup path is used.
 restart_cerbos() {
-  log "Restarting Cerbos on PDP VM..."
+  log "Restarting Cerbos on PDP VM (GOGC=${GOGC:-default} GOMEMLIMIT=${GOMEMLIMIT:-off} cgroup=${CGROUP_LIMIT:-none})..."
   GSSH "$PDP_VM" <<ENDSSH
 set -euo pipefail
+sudo systemctl stop cerbos-loadtest 2>/dev/null || true
+sudo systemctl reset-failed cerbos-loadtest 2>/dev/null || true
 pkill -f "${REMOTE_BASE}/bin/cerbos" 2>/dev/null || true
 sleep 1
 echo "Starting Cerbos..."
-STORE=${STORE} AUDIT_ENABLED=${AUDIT_ENABLED} SCHEMA_ENFORCEMENT=${SCHEMA_ENFORCEMENT} \
-  ${GOMAXPROCS:+GOMAXPROCS=${GOMAXPROCS}} \
-  nohup ${REMOTE_BASE}/bin/cerbos server \
- --debug-listen-addr=:6666 \
- --config=${REMOTE_BASE}/conf/cerbos.yaml \
-  --log-level=warn \
-  > ${REMOTE_BASE}/cerbos.log 2>&1 &
-echo "Cerbos PID: \$!"
+if [ -n "${CGROUP_LIMIT:-}" ]; then
+  sudo systemd-run --collect --unit=cerbos-loadtest \
+    -p MemoryMax=${CGROUP_LIMIT:-} -p MemorySwapMax=0 \
+    --setenv=STORE=${STORE} --setenv=AUDIT_ENABLED=${AUDIT_ENABLED} --setenv=SCHEMA_ENFORCEMENT=${SCHEMA_ENFORCEMENT} \
+    ${GOMAXPROCS:+--setenv=GOMAXPROCS=${GOMAXPROCS}} \
+    ${GOGC:+--setenv=GOGC=${GOGC}} \
+    ${GOMEMLIMIT:+--setenv=GOMEMLIMIT=${GOMEMLIMIT}} \
+    ${REMOTE_BASE}/bin/cerbos server \
+      --debug-listen-addr=:6666 --config=${REMOTE_BASE}/conf/cerbos.yaml --log-level=warn
+  echo "Started under systemd cgroup (MemoryMax=${CGROUP_LIMIT:-})"
+else
+  STORE=${STORE} AUDIT_ENABLED=${AUDIT_ENABLED} SCHEMA_ENFORCEMENT=${SCHEMA_ENFORCEMENT} \
+    ${GOMAXPROCS:+GOMAXPROCS=${GOMAXPROCS}} \
+    ${GOGC:+GOGC=${GOGC}} \
+    ${GOMEMLIMIT:+GOMEMLIMIT=${GOMEMLIMIT}} \
+    nohup ${REMOTE_BASE}/bin/cerbos server \
+   --debug-listen-addr=:6666 \
+   --config=${REMOTE_BASE}/conf/cerbos.yaml \
+    --log-level=warn \
+    > ${REMOTE_BASE}/cerbos.log 2>&1 &
+  echo "Cerbos PID: \$!"
+fi
 
 echo "Waiting for Cerbos to become healthy..."
 healthy=false
@@ -105,7 +126,7 @@ for i in \$(seq 1 30); do
 done
 if [ "\$healthy" != "true" ]; then
   echo "ERROR: Cerbos health check failed after 30 attempts" >&2
-  tail -20 ${REMOTE_BASE}/cerbos.log >&2
+  journalctl -u cerbos-loadtest -n 20 --no-pager 2>/dev/null || tail -20 ${REMOTE_BASE}/cerbos.log 2>/dev/null >&2
   exit 1
 fi
 ENDSSH
@@ -117,6 +138,49 @@ check_policies() {
     err "  cd hack/loadtest"
     err "  NUM_POLICIES=1000 ./loadtest.sh -g"
     exit 1
+  fi
+}
+
+# Peak-RSS helpers
+# The metrics endpoint only exposes *current* RSS, so peak RSS is read host-side from
+# /proc/<pid>/status on the PDP VM. clear_refs (write "5") resets the high-water so a
+# subsequent read measures a fresh window (e.g. the load phase, excluding the build).
+_pdp_cerbos_pid_expr="\$(pgrep -f '${REMOTE_BASE}/bin/cerbos server' | head -1)"
+
+# Echo the running Cerbos VmHWM in bytes (peak RSS since last reset / process start).
+pdp_vmhwm_bytes() {
+  GSSH "$PDP_VM" "awk '/^VmHWM:/{print \$2*1024}' /proc/${_pdp_cerbos_pid_expr}/status"
+}
+
+# Reset the VmHWM high-water of the running Cerbos process. clear_refs is owner-writable
+# only, and under the cgroup path Cerbos runs as root (sudo systemd-run), so write via
+# `sudo tee` — correct whether Cerbos is root- or user-owned. (Reading VmHWM from
+# /proc/<pid>/status needs no privilege; status is world-readable.)
+pdp_reset_vmhwm() {
+  GSSH "$PDP_VM" "echo 5 | sudo tee /proc/${_pdp_cerbos_pid_expr}/clear_refs >/dev/null" 2>/dev/null || \
+    err "could not reset VmHWM (clear_refs) — continuing with lifetime peak (RSS peak will include the build)"
+}
+
+# Echo "metric value" lines for the named PDP metrics. The endpoint is on the PDP's
+# private VPC IP, unreachable from the orchestrator, so the curl runs on the PDP itself
+# over SSH (against localhost). Args: metric names. (Counterpart to loadtest.sh's
+# client-side scrapeMetrics, which can curl the PDP directly — kept separate by design.)
+pdp_scrape() {
+  local raw
+  raw=$(GSSH "$PDP_VM" "curl -sf http://localhost:3592/_cerbos/metrics") || return 1
+  local m val
+  for m in "$@"; do
+    val=$(echo "$raw" | grep "^${m} " | head -1 | awk '{print $2}')
+    [[ -n "$val" ]] && printf '%s %s\n' "$m" "$val"
+  done
+}
+
+# Echo "running" if the Cerbos process is alive on the PDP, else "dead" (cgroup OOM).
+pdp_cerbos_alive() {
+  if GSSH "$PDP_VM" "pgrep -f '${REMOTE_BASE}/bin/cerbos server' >/dev/null"; then
+    echo running
+  else
+    echo dead
   fi
 }
 
