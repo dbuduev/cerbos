@@ -25,17 +25,6 @@ WORK_DIR=${WORK_DIR:-"./work"}
 METRICS_URL=${METRICS_URL:-"http://localhost:3592/_cerbos/metrics"}
 PROTOSET=${PROTOSET:-""}
 
-PDP_METRICS=(
-  process_resident_memory_bytes
-  go_memstats_heap_alloc_bytes
-  go_memstats_heap_sys_bytes
-  go_memstats_heap_inuse_bytes
-  go_memstats_heap_released_bytes
-  go_memstats_sys_bytes
-  go_memstats_stack_inuse_bytes
-  go_memstats_gc_sys_bytes
-)
-
 # Cumulative counters, diffed across a loaded phase (the legitimate use of before/after
 # scraping — counters have no peak to miss). GC CPU% = diff gc / diff total cpu-seconds.
 PDP_COUNTERS=(
@@ -45,83 +34,6 @@ PDP_COUNTERS=(
   go_gc_duration_seconds_sum
   go_memstats_alloc_bytes_total
 )
-
-# Scrape Cerbos metrics endpoint and output "metric_name integer_value" lines.
-# Args: $1 = output file
-# Returns non-zero if curl fails.
-scrapeMetrics() {
-  local outFile="$1"
-  local raw
-  raw=$(curl -sf "$METRICS_URL") || return 1
-
-  > "$outFile"
-  for m in "${PDP_METRICS[@]}"; do
-    local val
-    val=$(echo "$raw" | grep "^${m} " | cut -d ' ' -f 2)
-    if [[ -n "$val" ]]; then
-      # Convert scientific notation to integer
-      val=$(printf '%.0f' "$val")
-      echo "$m $val" >> "$outFile"
-    fi
-  done
-}
-
-# Print a before/after metrics diff table and write JSON.
-# Args: $1 = beforeFile, $2 = afterFile, $3 = jsonFile
-printMetricsDiff() {
-  local beforeFile="$1" afterFile="$2" jsonFile="$3"
-
-  local hasNumfmt=true
-  if ! command -v numfmt &>/dev/null; then
-    printf "\nNote: numfmt not found (part of GNU coreutils). Metrics will be shown in raw bytes.\n"
-    hasNumfmt=false
-  fi
-
-  local rowFmt="%-30s %12s %12s %12s\n"
-
-  printf "\nPDP Metrics (before/after):\n"
-  printf "$rowFmt" "Metric" "Before" "After" "Delta"
-  printf "$rowFmt" "------" "------" "-----" "-----"
-
-  local jsonEntries=()
-  while read -r metric beforeVal; do
-    local afterVal
-    afterVal=$(grep "^${metric} " "$afterFile" | cut -d ' ' -f 2)
-    if [[ -z "$afterVal" ]]; then
-      continue
-    fi
-
-    local delta sign
-    delta=$((afterVal - beforeVal))
-    if [[ $delta -ge 0 ]]; then
-      sign="+"
-    else
-      sign="-"
-      delta=$((-delta))
-    fi
-
-    local shortName="${metric#go_memstats_}"
-    local beforeHuman="$beforeVal" afterHuman="$afterVal" deltaHuman="$delta"
-    if $hasNumfmt; then
-      beforeHuman=$(numfmt --to=iec-i --suffix=B "$beforeVal")
-      afterHuman=$(numfmt --to=iec-i --suffix=B "$afterVal")
-      deltaHuman=$(numfmt --to=iec-i --suffix=B "$delta")
-    fi
-
-    printf "$rowFmt" "$shortName" "$beforeHuman" "$afterHuman" "${sign}${deltaHuman}"
-
-    local rawDelta=$((afterVal - beforeVal))
-    jsonEntries+=("{\"name\":\"${shortName}\",\"before\":${beforeVal},\"after\":${afterVal},\"delta\":${rawDelta}}")
-  done < "$beforeFile"
-
-  if [[ ${#jsonEntries[@]} -gt 0 ]]; then
-    local joined
-    joined=$(printf ',%s' "${jsonEntries[@]}")
-    joined="${joined:1}" # strip leading comma
-    echo "{\"metrics\":[${joined}]}" | jq . > "$jsonFile"
-    printf "Metrics saved to %s\n" "$jsonFile"
-  fi
-}
 
 # Scrape cumulative counter metrics as raw float strings (diffed later, not formatted).
 # Args: $1 = output file. Returns non-zero if curl fails.
@@ -287,12 +199,10 @@ executeTest() {
       --duration "5s" \
       "${SERVER}" > /dev/null
 
-  local beforeFile afterFile counterBefore counterAfter metricsAvailable
-  beforeFile=$(mktemp)
-  afterFile=$(mktemp)
+  local counterBefore counterAfter
   counterBefore=$(mktemp)
   counterAfter=$(mktemp)
-  trap "rm -f \"$beforeFile\" \"$afterFile\" \"$counterBefore\" \"$counterAfter\"" EXIT INT TERM
+  trap "rm -f \"$counterBefore\" \"$counterAfter\"" EXIT INT TERM
 
   # --- Sustained-rate test ---
   local estimatedCount=$((RPS * DURATION_SECS))
@@ -302,8 +212,6 @@ executeTest() {
   fi
   printf "Running sustained-rate test: %s RPS for %ss\n" "$RPS" "$DURATION_SECS"
 
-  metricsAvailable=true
-  scrapeMetrics "$beforeFile" || metricsAvailable=false
   scrapeCounters "$counterBefore" || true
 
   { printf "Start: %s\n" "$(date '+%T')"; [[ -n "$cpuInfo" ]] && printf "%s\n" "$cpuInfo"; } | tee "${resultPrefix}_rps.txt"
@@ -323,13 +231,6 @@ executeTest() {
 
   printf "End:   %s\n" "$(date '+%T')" | tee -a "${resultPrefix}_rps.txt"
 
-  if $metricsAvailable && scrapeMetrics "$afterFile"; then
-    if [[ -s "$beforeFile" && -s "$afterFile" ]]; then
-      printMetricsDiff "$beforeFile" "$afterFile" "${resultPrefix}_rps_metrics.json" | \
-        tee -a  "${resultPrefix}_rps.txt"
-    fi
-  fi
-
   if scrapeCounters "$counterAfter" && [[ -s "$counterBefore" && -s "$counterAfter" ]]; then
     printCounterDiff "$counterBefore" "$counterAfter" "${resultPrefix}_rps_gc.json" | \
       tee -a "${resultPrefix}_rps.txt"
@@ -345,8 +246,6 @@ executeTest() {
   fi
   printf "Running throughput test: %s iterations\n" "$ITERATIONS"
 
-  metricsAvailable=true
-  scrapeMetrics "$beforeFile" || metricsAvailable=false
   scrapeCounters "$counterBefore" || true
 
   { printf "Start: %s\n" "$(date '+%T')"; [[ -n "$cpuInfo" ]] && printf "%s\n" "$cpuInfo"; } | tee "${resultPrefix}_throughput.txt"
@@ -364,13 +263,6 @@ executeTest() {
         tee -a "${resultPrefix}_throughput.txt"
 
   printf "End:   %s\n" "$(date '+%T')" | tee -a "${resultPrefix}_throughput.txt"
-
-  if $metricsAvailable && scrapeMetrics "$afterFile"; then
-    if [[ -s "$beforeFile" && -s "$afterFile" ]]; then
-      printMetricsDiff "$beforeFile" "$afterFile" "${resultPrefix}_throughput_metrics.json" | \
-        tee -a "${resultPrefix}_throughput.txt"
-    fi
-  fi
 
   if scrapeCounters "$counterAfter" && [[ -s "$counterBefore" && -s "$counterAfter" ]]; then
     printCounterDiff "$counterBefore" "$counterAfter" "${resultPrefix}_throughput_gc.json" | \
