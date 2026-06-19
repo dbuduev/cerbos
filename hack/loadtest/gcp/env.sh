@@ -175,15 +175,6 @@ pdp_vmhwm_bytes() {
   GSSH "$PDP_VM" "awk '/^VmHWM:/{print \$2*1024}' /proc/${_pdp_cerbos_pid_expr}/status"
 }
 
-# Reset the VmHWM high-water of the running Cerbos process. clear_refs is owner-writable
-# only, and under the cgroup path Cerbos runs as root (sudo systemd-run), so write via
-# `sudo tee` — correct whether Cerbos is root- or user-owned. (Reading VmHWM from
-# /proc/<pid>/status needs no privilege; status is world-readable.)
-pdp_reset_vmhwm() {
-  GSSH "$PDP_VM" "echo 5 | sudo tee /proc/${_pdp_cerbos_pid_expr}/clear_refs >/dev/null" 2>/dev/null || \
-    err "could not reset VmHWM (clear_refs) — continuing with lifetime peak (RSS peak will include the build)"
-}
-
 # Echo "metric value" lines for the named PDP metrics. The endpoint is on the PDP's
 # private VPC IP, unreachable from the orchestrator, so the curl runs on the PDP itself
 # over SSH (against localhost). Args: metric names. (Counterpart to loadtest.sh's
@@ -196,15 +187,6 @@ pdp_scrape() {
     val=$(echo "$raw" | grep "^${m} " | head -1 | awk '{print $2}')
     [[ -n "$val" ]] && printf '%s %s\n' "$m" "$val"
   done
-}
-
-# Echo "running" if the Cerbos process is alive on the PDP, else "dead" (cgroup OOM).
-pdp_cerbos_alive() {
-  if GSSH "$PDP_VM" "pgrep -f '${REMOTE_BASE}/bin/cerbos server' >/dev/null"; then
-    echo running
-  else
-    echo dead
-  fi
 }
 
 # PDP footprint gauges scraped post-load / at the settled floor (Sys-HeapReleased
@@ -240,24 +222,33 @@ cpu_summary() {
 run_load_and_capture() {
   local result_dir="$1"
   mkdir -p "$result_dir"
+  local metric_re
+  metric_re=$(IFS='|'; echo "${PDP_FLOOR_METRICS[*]}")
 
-  # Fresh remote results, and reset the peak so VmHWM measures the load window (build
-  # excluded).
-  GSSH "$PDP_VM" "rm -rf ${REMOTE_BASE}/results/* 2>/dev/null || true"
-  GSSH "$CLIENT_VM" "rm -rf ${REMOTE_BASE}/results/* 2>/dev/null || true"
-  pdp_reset_vmhwm
+  # --- PDP setup (1 call): clear results, reset the VmHWM peak (so it measures the load
+  # window, build excluded), start the CPU monitor.
+  GSSH "$PDP_VM" <<ENDSSH || true
+rm -rf ${REMOTE_BASE}/results/* 2>/dev/null || true
+echo 5 | sudo tee /proc/\$(pgrep -f '${REMOTE_BASE}/bin/cerbos server' | head -1)/clear_refs >/dev/null 2>&1 || true
+pkill -f 'mpstat -P ALL' 2>/dev/null || true
+setsid mpstat -P ALL 1 > ${REMOTE_BASE}/results/cpu_usage.log 2>&1 < /dev/null &
+ENDSSH
 
-  # CPU monitors on both VMs.
-  GSSH "$PDP_VM" "pkill -f 'mpstat -P ALL' 2>/dev/null || true; setsid mpstat -P ALL 1 > ${REMOTE_BASE}/results/cpu_usage.log 2>&1 < /dev/null &" || true
-  GSSH "$CLIENT_VM" "pkill -f 'mpstat -P ALL' 2>/dev/null || true; setsid mpstat -P ALL 1 > ${REMOTE_BASE}/results/client_cpu_usage.log 2>&1 < /dev/null &" || true
-
+  # --- Client load (1 call): clear results, start CPU monitor, run loadtest.sh -e, stop
+  # the monitor, tar the results. Preserve loadtest.sh's exit code for OOM detection.
   log "Running load on Client VM (${CLIENT_VM})..."
-  # A mid-load cgroup OOM makes loadtest.sh error out — tolerate it and detect below.
-  GSSH "$CLIENT_VM" <<ENDSSH || log "load run returned non-zero — possible OOM mid-load"
-set -uo pipefail
+  # OOM is detected by the PDP capture below (pgrep liveness -> status), NOT by
+  # loadtest.sh's exit code: its own set -e + pipefail makes a benign ghz hiccup (e.g. a
+  # few Unavailable resets) non-zero even on a successful run, so the code is a useless
+  # OOM signal. Ignore it here.
+  GSSH "$CLIENT_VM" <<ENDSSH
+set -euo pipefail
 . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 cd ${REMOTE_BASE}
+rm -rf ${REMOTE_BASE}/results/* 2>/dev/null || true
 mkdir -p ${REMOTE_BASE}/results
+pkill -f 'mpstat -P ALL' 2>/dev/null || true
+setsid mpstat -P ALL 1 > ${REMOTE_BASE}/results/client_cpu_usage.log 2>&1 < /dev/null &
 SERVER="${PDP_IP}:3593" \
 METRICS_URL="http://${PDP_IP}:3592/_cerbos/metrics" \
 WORK_DIR="${REMOTE_BASE}" \
@@ -270,30 +261,33 @@ ${CONNECTIONS:+CONNECTIONS="${CONNECTIONS}"} \
 ${REQ_KIND:+REQ_KIND="${REQ_KIND}"} \
 ${NUM_POLICIES:+NUM_POLICIES="${NUM_POLICIES}"} \
 ${PROTOSET:+PROTOSET="${REMOTE_BASE}/cerbos.protoset"} \
-  nix develop --command bash loadtest.sh -e
+  nix develop --command bash loadtest.sh -e || true
+pkill -f 'mpstat -P ALL' 2>/dev/null || true
+tar czf /tmp/client-results.tar.gz -C ${REMOTE_BASE}/results .
 ENDSSH
 
-  GSSH "$PDP_VM" "pkill -f 'mpstat -P ALL' 2>/dev/null || true" || true
-  GSSH "$CLIENT_VM" "pkill -f 'mpstat -P ALL' 2>/dev/null || true" || true
+  # --- PDP capture (1 call): stop the CPU monitor; write status / peak RSS / accounting
+  # into the results dir (no pid => cgroup OOM => status=oom); tar everything for download.
+  GSSH "$PDP_VM" <<ENDSSH || true
+pkill -f 'mpstat -P ALL' 2>/dev/null || true
+pid=\$(pgrep -f '${REMOTE_BASE}/bin/cerbos server' | head -1)
+if [ -n "\$pid" ]; then
+  echo ok > ${REMOTE_BASE}/results/status
+  awk '/^VmHWM:/{print \$2*1024}' /proc/\$pid/status > ${REMOTE_BASE}/results/vmhwm_bytes.txt 2>/dev/null || true
+  curl -sf http://localhost:3592/_cerbos/metrics | grep -E "^(${metric_re}) " > ${REMOTE_BASE}/results/post_metrics.txt 2>/dev/null || true
+else
+  echo oom > ${REMOTE_BASE}/results/status
+fi
+tar czf /tmp/pdp-results.tar.gz -C ${REMOTE_BASE}/results .
+ENDSSH
 
-  # Per-run captures: OOM status, peak RSS, post-load accounting.
-  if [[ "$(pdp_cerbos_alive)" == dead ]]; then
-    echo oom > "${result_dir}/status"
-    log "Cerbos died during load — likely cgroup OOM"
-  else
-    echo ok > "${result_dir}/status"
-  fi
-  pdp_vmhwm_bytes > "${result_dir}/vmhwm_bytes.txt" 2>/dev/null || echo "" > "${result_dir}/vmhwm_bytes.txt"
-  pdp_scrape "${PDP_FLOOR_METRICS[@]}" > "${result_dir}/post_metrics.txt" 2>/dev/null || true
-
-  # Download PDP cpu log + client results (ghz JSON, *_gc.json, summaries) into result_dir.
-  GSSH "$PDP_VM" "tar czf /tmp/pdp-results.tar.gz -C ${REMOTE_BASE}/results cpu_usage.log" 2>/dev/null || true
+  # --- Download both tars (1 scp each) and extract into result_dir.
   GSCP "${PDP_VM}:/tmp/pdp-results.tar.gz" "/tmp/pdp-results.tar.gz" 2>/dev/null || true
   [[ -f /tmp/pdp-results.tar.gz ]] && { tar xzf /tmp/pdp-results.tar.gz -C "$result_dir"; mv -f "${result_dir}/cpu_usage.log" "${result_dir}/pdp_cpu_usage.log" 2>/dev/null; rm -f /tmp/pdp-results.tar.gz; }
-
-  GSSH "$CLIENT_VM" "tar czf /tmp/client-results.tar.gz -C ${REMOTE_BASE}/results ." 2>/dev/null || true
   GSCP "${CLIENT_VM}:/tmp/client-results.tar.gz" "/tmp/client-results.tar.gz" 2>/dev/null || true
   [[ -f /tmp/client-results.tar.gz ]] && { tar xzf /tmp/client-results.tar.gz -C "$result_dir"; rm -f /tmp/client-results.tar.gz; }
+
+  [[ "$(cat "${result_dir}/status" 2>/dev/null)" == oom ]] && log "Cerbos died during load — likely cgroup OOM"
 
   printf "\nCPU utilization (%% of all cores):\n"
   cpu_summary "PDP" "${result_dir}/pdp_cpu_usage.log"
