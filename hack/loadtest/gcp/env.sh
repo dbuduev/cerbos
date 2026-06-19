@@ -14,6 +14,8 @@ if [[ -n "${TERRAFORM_DIR:-}" ]]; then
   GCP_ZONE=$(_tf_output zone)
   PDP_VM=$(_tf_output pdp_vm_name)
   CLIENT_VM=$(_tf_output client_vm_name)
+  # Tolerant: the staging_bucket output may be absent in older state (pre-apply).
+  STAGING_BUCKET=$(_tf_output staging_bucket 2>/dev/null || true)
   unset -f _tf_output
 fi
 
@@ -40,6 +42,12 @@ STORE=${STORE:-"disk"}
 AUDIT_ENABLED=${AUDIT_ENABLED:-"false"}
 SCHEMA_ENFORCEMENT=${SCHEMA_ENFORCEMENT:-"none"}
 
+# Optional GCS bucket for staging bulk uploads, e.g. STAGING_BUCKET=gs://my-bucket. When
+# set, deploy uploads go local -> GCS -> VM (gcloud storage cp: reliable + parallel,
+# bypassing the throughput-limited / stall-prone IAP tunnel) instead of scp over IAP.
+# The VMs' service account needs roles/storage.objectViewer on the bucket.
+STAGING_BUCKET=${STAGING_BUCKET:-}
+
 # Paths
 REMOTE_BASE=${REMOTE_BASE:-"/opt/cerbos-loadtest"}
 WORK_DIR=${WORK_DIR:-"$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/work"}
@@ -53,6 +61,21 @@ GSSH() {
 
 GSCP() {
   gcloud compute scp --zone="$GCP_ZONE" --project="$GCP_PROJECT" --tunnel-through-iap "$@"
+}
+
+# Upload a local file to a path on a VM by staging through GCS (gcloud storage cp —
+# reliable + parallel; the VM pulls bucket->dest over Google's internal network). This
+# avoids the IAP tunnel, which is throughput-limited and stalls on large files, so we
+# require STAGING_BUCKET rather than silently falling back to that broken path.
+# Args: $1=local_file  $2=vm  $3=remote_dest_path (a file path, not a directory).
+upload_to_vm() {
+  local src="$1" vm="$2" dest="$3"
+  : "${STAGING_BUCKET:?required for uploads — set it, or apply Terraform (staging_bucket output) with TERRAFORM_DIR}"
+  local obj="${STAGING_BUCKET%/}/deploy/$(basename "$src")"
+  log "Staging $(basename "$src") -> ${obj} -> ${vm}:${dest}"
+  gcloud storage cp "$src" "$obj"
+  GSSH "$vm" "gcloud storage cp '$obj' '$dest'"
+  gcloud storage rm "$obj" 2>/dev/null || true
 }
 
 log() {
