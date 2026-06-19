@@ -34,7 +34,7 @@ log "PDP internal IP: ${PDP_IP}"
 
 # --- Arms / parameters (overridable) ---
 NUM_POLICIES=${NUM_POLICIES:-1000}
-read -r -a GOGC_ARMS <<< "${GOGC_ARMS:-100}"
+read -r -a GOGC_ARMS <<< "${GOGC_ARMS:-100 50 20 10}"
 read -r -a MEMLIMIT_MULTS <<< "${MEMLIMIT_MULTS:-2.0 1.5 1.3 1.15}"
 VALID_GOGC=${VALID_GOGC:-50}        # in-envelope validation arm GOGC
 RPS=${RPS:-5000}
@@ -90,28 +90,28 @@ done
 #     Production-faithful pairing; shrinking the box finds the floor (OOM at the bottom).
 #     Skip arms whose box is below the build high-water (would OOM during the build). ---
 
-# for mult in "${MEMLIMIT_MULTS[@]}"; do
-#   box=$(awk -v r="$R" -v m="$mult" 'BEGIN{printf "%d", r*m}')
-#   if [[ "$box" -le "${BUILD_HWM:-0}" ]]; then
-#     log "skipping ${mult}xR box (${box} B) — below build high-water ${BUILD_HWM} B (would OOM the build)"
-#     continue
-#   fi
-#   gml=$(awk -v b="$box" 'BEGIN{printf "%d", b*0.9}')
-#   run_arm "edge2_m${mult}" "off" "$gml" "$box"
-# done
+for mult in "${MEMLIMIT_MULTS[@]}"; do
+  box=$(awk -v r="$R" -v m="$mult" 'BEGIN{printf "%d", r*m}')
+  if [[ "$box" -le "${BUILD_HWM:-0}" ]]; then
+    log "skipping ${mult}xR box (${box} B) — below build high-water ${BUILD_HWM} B (would OOM the build)"
+    continue
+  fi
+  gml=$(awk -v b="$box" 'BEGIN{printf "%d", b*0.9}')
+  run_arm "edge2_m${mult}" "off" "$gml" "$box"
+done
 
 # --- Validation: in-envelope (GOGC=x, generous box ~2xR, GOMEMLIMIT 0.9x box; should not bind) ---
 
-# _valid_box=$(awk -v r="$R" 'BEGIN{printf "%d", r*2.0}')
-# _valid_gml=$(awk -v b="$_valid_box" 'BEGIN{printf "%d", b*0.9}')
-# run_arm "valid_inenvelope_gogc${VALID_GOGC}" "$VALID_GOGC" "$_valid_gml" "$_valid_box"
+_valid_box=$(awk -v r="$R" 'BEGIN{printf "%d", r*2.0}')
+_valid_gml=$(awk -v b="$_valid_box" 'BEGIN{printf "%d", b*0.9}')
+run_arm "valid_inenvelope_gogc${VALID_GOGC}" "$VALID_GOGC" "$_valid_gml" "$_valid_box"
 
 # --- Hard-OOM demo: cgroup just above the build high-water, NO GOMEMLIMIT, GOGC=100.
 #     The runtime doesn't know the box, so under load the sawtooth grows past it -> cgroup
 #     OOM. Demonstrates why the soft GOMEMLIMIT backstop is needed (plan §4.3). ---
 
-# _oom_box=$(awk -v h="${BUILD_HWM:-0}" 'BEGIN{printf "%d", h*1.05}')
-# run_arm "oom_demo_nolimit" "100" "" "$_oom_box"
+_oom_box=$(awk -v h="${BUILD_HWM:-0}" 'BEGIN{printf "%d", h*1.05}')
+run_arm "oom_demo_nolimit" "100" "" "$_oom_box"
 
 # NOTE: forced-overload of the *shipped* config (GOGC=x + box, then drive concurrency/
 # live-set up until the soft cap binds and degrades gracefully) is still manual — vary
@@ -129,8 +129,6 @@ emit_tables() {
     printf '| Arm | RSS peak | GC CPU%% | Throughput | p99 (ms) | outcome |\n|---|--:|--:|--:|--:|---|\n'
     for g in "${GOGC_ARMS[@]}"; do _row "edge1_gogc${g}" "GOGC=${g}"; done
 
-    return 0
-    
     printf '\n## Edge 2 — backstop cost (GOGC=off; cgroup box = mult x R, GOMEMLIMIT ~0.9x box)\n\n'
     printf '| Arm | box (cgroup) | RSS peak | GC CPU%% | Throughput | p99 (ms) | outcome |\n|---|--:|--:|--:|--:|--:|---|\n'
     for mult in "${MEMLIMIT_MULTS[@]}"; do
