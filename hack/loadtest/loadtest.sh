@@ -15,7 +15,7 @@ ITERATIONS=${ITERATIONS:-"100000"}
 NUM_POLICIES=${NUM_POLICIES:-"100"}
 POLICY_SET=${POLICY_SET:-"classic"}
 REQ_KIND=${REQ_KIND:-"cr"}
-RPS=${RPS:-"500"}                  # number, or "auto" (target = RPS_AUTO_PCT% of measured throughput)
+RPS=${RPS:-"auto"}                  # number, or "auto" (target = RPS_AUTO_PCT% of measured throughput)
 RPS_AUTO_PCT=${RPS_AUTO_PCT:-"85"} # used only when RPS=auto
 RPS_ROUND=${RPS_ROUND:-"100"}      # round the auto target to the nearest this (smooths run-to-run variance)
 RPS_MIN=${RPS_MIN:-"500"}          # when RPS=auto, reject the config (skip sustained) if the target falls below this
@@ -45,14 +45,11 @@ scrapeCounters() {
   local raw
   raw=$(curl -sf "$METRICS_URL") || return 1
 
-  > "$outFile"
   for m in "${PDP_COUNTERS[@]}"; do
     local val
     val=$(echo "$raw" | grep "^${m} " | head -1 | awk '{print $2}')
-    if [[ -n "$val" ]]; then
-      echo "$m $val" >> "$outFile"
-    fi
-  done
+    [[ -n "$val" ]] && echo "$m $val"
+  done > "$outFile"
 }
 
 # Read one counter value from a scrapeCounters output file. Args: $1=file $2=metric.
@@ -232,11 +229,13 @@ executeTest() {
 
   printf "End:   %s\n" "$(date '+%T')" | tee -a "${resultPrefix}_throughput.txt"
 
+  printf "1. WTF RPS is %s\n" "${RPS}"
   if scrapeCounters "$counterAfter" && [[ -s "$counterBefore" && -s "$counterAfter" ]]; then
     printCounterDiff "$counterBefore" "$counterAfter" "${resultPrefix}_throughput_gc.json" | \
       tee -a "${resultPrefix}_throughput.txt"
   fi
 
+  printf "2. WTF RPS is %s\n" "${RPS}"
   # --- Resolve RPS=auto from the achieved throughput ---
   if [[ "$RPS" == "auto" ]]; then
     local achieved
