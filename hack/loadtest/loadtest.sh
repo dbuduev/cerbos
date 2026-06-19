@@ -15,7 +15,9 @@ ITERATIONS=${ITERATIONS:-"100000"}
 NUM_POLICIES=${NUM_POLICIES:-"100"}
 POLICY_SET=${POLICY_SET:-"classic"}
 REQ_KIND=${REQ_KIND:-"cr"}
-RPS=${RPS:-"500"}
+RPS=${RPS:-"500"}                  # number, or "auto" (target = RPS_AUTO_PCT% of measured throughput)
+RPS_AUTO_PCT=${RPS_AUTO_PCT:-"85"} # used only when RPS=auto
+RPS_ROUND=${RPS_ROUND:-"100"}      # round the auto target to the nearest this (smooths run-to-run variance)
 SCHEMA_ENFORCEMENT=${SCHEMA_ENFORCEMENT:-"none"}
 STORE=${STORE:-"disk"}
 SERVER=${SERVER:-"localhost:3593"}
@@ -187,15 +189,14 @@ executeTest() {
     ghzProtoArgs+=(--protoset "$PROTOSET")
   fi
 
-  # --- Warmup ---
-  printf "Warming up PDP with RPS=$RPS for 5 seconds...\n"
+  # --- Warmup (max rate; RPS may be "auto", so don't pace it) ---
+  printf "Warming up PDP at max rate for 5 seconds...\n"
   ghz --insecure \
       "${ghzProtoArgs[@]}" \
       --call cerbos.svc.v1.CerbosService/CheckResources \
       --data-file "$dataFile" \
       --concurrency "$CONCURRENCY" \
       --connections "$CONNECTIONS" \
-      --rps "$RPS" \
       --duration "5s" \
       "${SERVER}" > /dev/null
 
@@ -204,9 +205,56 @@ executeTest() {
   counterAfter=$(mktemp)
   trap "rm -f \"$counterBefore\" \"$counterAfter\"" EXIT INT TERM
 
+  local ghzLimit=1000000
+
+  # --- Throughput test (runs first; its achieved RPS is the ceiling for RPS=auto) ---
+  if [[ $ITERATIONS -gt $ghzLimit ]]; then
+    printf "WARNING: %s iterations exceeds 1M — ghz will cap JSON details output, limiting per-request analysis\n" "$ITERATIONS"
+  fi
+  printf "Running throughput test: %s iterations\n" "$ITERATIONS"
+
+  scrapeCounters "$counterBefore" || true
+
+  { printf "Start: %s\n" "$(date '+%T')"; [[ -n "$cpuInfo" ]] && printf "%s\n" "$cpuInfo"; } | tee "${resultPrefix}_throughput.txt"
+
+  ghz --insecure \
+      "${ghzProtoArgs[@]}" \
+      --call cerbos.svc.v1.CerbosService/CheckResources \
+      --data-file "$dataFile" \
+      --concurrency "$CONCURRENCY" \
+      --connections "$CONNECTIONS" \
+      --total "$ITERATIONS" \
+      -O json \
+      "${SERVER}" | \
+        tee "${resultPrefix}_throughput.json" | "${WORK_DIR}/printsummary" | \
+        tee -a "${resultPrefix}_throughput.txt"
+
+  printf "End:   %s\n" "$(date '+%T')" | tee -a "${resultPrefix}_throughput.txt"
+
+  if scrapeCounters "$counterAfter" && [[ -s "$counterBefore" && -s "$counterAfter" ]]; then
+    printCounterDiff "$counterBefore" "$counterAfter" "${resultPrefix}_throughput_gc.json" | \
+      tee -a "${resultPrefix}_throughput.txt"
+  fi
+
+  # --- Resolve RPS=auto from the achieved throughput ---
+  if [[ "$RPS" == "auto" ]]; then
+    local achieved
+    achieved=$(jq -r '.rps // empty' "${resultPrefix}_throughput.json" 2>/dev/null || true)
+    if [[ -z "$achieved" ]]; then
+      printf "ERROR: RPS=auto but could not read achieved throughput from %s — skipping sustained-rate test\n" "${resultPrefix}_throughput.json"
+      return 0
+    fi
+    RPS=$(awk -v a="$achieved" -v p="$RPS_AUTO_PCT" -v r="$RPS_ROUND" \
+      'BEGIN{ if (r < 1) r = 1; x = a*p/100; printf "%.0f", int(x/r + 0.5)*r }')
+    printf "RPS=auto: sustained target = %s RPS (%s%% of measured throughput %.0f, rounded to %s)\n" "$RPS" "$RPS_AUTO_PCT" "$achieved" "$RPS_ROUND"
+  fi
+
+  # Let GC settle before the sustained-rate test
+  printf "\nWaiting 10s for GC to settle...\n"
+  sleep 10
+
   # --- Sustained-rate test ---
   local estimatedCount=$((RPS * DURATION_SECS))
-  local ghzLimit=1000000
   if [[ $estimatedCount -gt $ghzLimit ]]; then
     printf "WARNING: estimated %s requests exceeds 1M — ghz will cap JSON details output, limiting per-request analysis\n" "$estimatedCount"
   fi
@@ -234,39 +282,6 @@ executeTest() {
   if scrapeCounters "$counterAfter" && [[ -s "$counterBefore" && -s "$counterAfter" ]]; then
     printCounterDiff "$counterBefore" "$counterAfter" "${resultPrefix}_rps_gc.json" | \
       tee -a "${resultPrefix}_rps.txt"
-  fi
-
-  # Let GC settle before starting the next test
-  printf "\nWaiting 10s for GC to settle...\n"
-  sleep 10
-
-  # --- Throughput test ---
-  if [[ $ITERATIONS -gt $ghzLimit ]]; then
-    printf "WARNING: %s iterations exceeds 1M — ghz will cap JSON details output, limiting per-request analysis\n" "$ITERATIONS"
-  fi
-  printf "Running throughput test: %s iterations\n" "$ITERATIONS"
-
-  scrapeCounters "$counterBefore" || true
-
-  { printf "Start: %s\n" "$(date '+%T')"; [[ -n "$cpuInfo" ]] && printf "%s\n" "$cpuInfo"; } | tee "${resultPrefix}_throughput.txt"
-
-  ghz --insecure \
-      "${ghzProtoArgs[@]}" \
-      --call cerbos.svc.v1.CerbosService/CheckResources \
-      --data-file "$dataFile" \
-      --concurrency "$CONCURRENCY" \
-      --connections "$CONNECTIONS" \
-      --total "$ITERATIONS" \
-      -O json \
-      "${SERVER}" | \
-        tee "${resultPrefix}_throughput.json" | "${WORK_DIR}/printsummary" | \
-        tee -a "${resultPrefix}_throughput.txt"
-
-  printf "End:   %s\n" "$(date '+%T')" | tee -a "${resultPrefix}_throughput.txt"
-
-  if scrapeCounters "$counterAfter" && [[ -s "$counterBefore" && -s "$counterAfter" ]]; then
-    printCounterDiff "$counterBefore" "$counterAfter" "${resultPrefix}_throughput_gc.json" | \
-      tee -a "${resultPrefix}_throughput.txt"
   fi
 }
 
