@@ -37,7 +37,7 @@ NUM_POLICIES=${NUM_POLICIES:-1000}
 read -r -a GOGC_ARMS <<< "${GOGC_ARMS:-100 50 20 10}"
 read -r -a MEMLIMIT_MULTS <<< "${MEMLIMIT_MULTS:-2.0 1.5 1.3 1.15}"
 VALID_GOGC=${VALID_GOGC:-50}        # in-envelope validation arm GOGC
-RPS=${RPS:-5000}
+RPS=${RPS:-auto}   # per-arm: sustained target = RPS_AUTO_PCT% of that arm's measured throughput
 DURATION_SECS=${DURATION_SECS:-120}
 ITERATIONS=${ITERATIONS:-1000000}
 
