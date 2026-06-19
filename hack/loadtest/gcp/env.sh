@@ -56,7 +56,9 @@ WORK_DIR=${WORK_DIR:-"$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/work"}
 GSSH() {
   local vm="$1"
   shift
-  gcloud compute ssh "$vm" --zone="$GCP_ZONE" --project="$GCP_PROJECT" --tunnel-through-iap -- "$@"
+  # -T: don't request a PTY (all GSSH calls are non-interactive — commands or heredocs);
+  # avoids ssh's "Pseudo-terminal will not be allocated because stdin is not a terminal".
+  gcloud compute ssh "$vm" --zone="$GCP_ZONE" --project="$GCP_PROJECT" --tunnel-through-iap --ssh-flag=-T -- "$@"
 }
 
 GSCP() {
