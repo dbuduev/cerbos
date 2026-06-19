@@ -229,13 +229,11 @@ executeTest() {
 
   printf "End:   %s\n" "$(date '+%T')" | tee -a "${resultPrefix}_throughput.txt"
 
-  printf "1. WTF RPS is %s\n" "${RPS}"
   if scrapeCounters "$counterAfter" && [[ -s "$counterBefore" && -s "$counterAfter" ]]; then
     printCounterDiff "$counterBefore" "$counterAfter" "${resultPrefix}_throughput_gc.json" | \
       tee -a "${resultPrefix}_throughput.txt"
   fi
 
-  printf "2. WTF RPS is %s\n" "${RPS}"
   # --- Resolve RPS=auto from the achieved throughput ---
   if [[ "$RPS" == "auto" ]]; then
     local achieved
