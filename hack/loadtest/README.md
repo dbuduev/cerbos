@@ -33,11 +33,16 @@ NUM_POLICIES=1000 ./loadtest.sh -u
 NUM_POLICIES=1000 RPS=500 ./loadtest.sh -e
 ```
 
-This runs two tests back-to-back:
-- **Sustained-rate test**: sends requests at the configured RPS for `DURATION_SECS` seconds.
+This runs two tests back-to-back (throughput first, so its result can drive `RPS=auto`):
 - **Throughput test**: sends `ITERATIONS` requests as fast as possible.
+- **Sustained-rate test**: sends requests at `RPS` for `DURATION_SECS` seconds. With
+  `RPS=auto`, the target is set to `RPS_AUTO_PCT`% (default 85) of the throughput test's
+  measured RPS, rounded to the nearest `RPS_ROUND` (default 100) to absorb run-to-run
+  variance — useful when the ceiling varies by config (e.g. the provisioning sweep),
+  so the sustained test always runs at a consistent fraction of *that run's* capacity
+  rather than a fixed, possibly-saturating target.
 
-PDP memory metrics are scraped before and after each test and printed as a diff table. Results are saved to `results/`.
+Per phase, GC-cost counters are diffed and reported (GC CPU%, cycles, pause, bytes allocated; saved to `*_gc.json`). Memory *footprint* is deliberately **not** measured here — instantaneous gauges scraped under load don't capture a peak (see `reports/loadtest-memory-plan.md` §8); peak RSS and the steady-state floor are measured by the provisioning sweep (`gcp/sweep.sh`) and the cold-start floor read. Results are saved to `results/`.
 
 ### 4. Stop services
 
@@ -65,7 +70,10 @@ PDP memory metrics are scraped before and after each test and printed as a diff 
 | `PASSWORD` | Cerbos Admin API password | `cerbosAdmin` |
 | `POLICY_SET` | Policy template set to use (see below) | `classic` |
 | `REQ_KIND` | Request template prefix. Files matching `${REQ_KIND}_*.json` are included. Use `cr` to mix all request types, or `cr_req01` for a single type | `cr` |
-| `RPS` | Target requests per second for the sustained-rate test | `500` |
+| `RPS` | Target requests/sec for the sustained-rate test, or `auto` to derive it from the throughput test (see above) | `500` |
+| `RPS_AUTO_PCT` | When `RPS=auto`, sustained target = this %% of measured throughput | `85` |
+| `RPS_ROUND` | When `RPS=auto`, round the target to the nearest this (smooths run-to-run throughput variance) | `100` |
+| `RPS_MIN` | When `RPS=auto`, reject the config (skip the sustained test, write a `*_rejected` marker) if the target falls below this — i.e. throughput collapsed and the run is degenerate | `500` |
 | `SCHEMA_ENFORCEMENT` | Schema enforcement level | `none` |
 | `SERVER` | Cerbos gRPC server address | `localhost:3593` |
 | `STORE` | Storage backend (`disk` or `postgres`) | `disk` |

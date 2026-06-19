@@ -79,7 +79,30 @@ terraform destroy
 | `env.sh` | Shared configuration and helper functions; reads Terraform outputs when `TERRAFORM_DIR` is set |
 | `setup.sh` | Install Nix + Docker on client VM, create directory structure on both VMs |
 | `deploy.sh` | Upload policies/requests/configs, download Cerbos binary, start all services. Use `-p` to redeploy policies only |
-| `run.sh` | Run warmup + sustained-rate + throughput tests, download results |
+| `run.sh` | Run warmup + sustained-rate + throughput tests, download results (single config) |
+| `sweep.sh` | Memory provisioning sweep: Step-0 floor → GOGC edge → GOMEMLIMIT edge → validation, per arm restarting Cerbos and capturing peak RSS (`VmHWM`), per-phase GC counters, and ghz throughput/p99; emits the `§4.6` tables. See `reports/loadtest-memory-plan.md`. |
+
+### Memory provisioning sweep
+
+Runs at one policy count (deploy policies first). Arms and load are overridable via
+`GOGC_ARMS`, `MEMLIMIT_MULTS`, `VALID_GOGC`, `RPS`, `DURATION_SECS`, `ITERATIONS`.
+
+```bash
+# deploy a policy set, then sweep it (e.g. 8K)
+NUM_POLICIES=8000 ../loadtest.sh -g && ./deploy.sh -p
+NUM_POLICIES=8000 RPS=5000 ./sweep.sh
+# results + summary.md under hack/loadtest/results/gcp/sweep-8000/
+```
+
+Edge-2 and validation arms run Cerbos under a **cgroup hard limit** (`systemd-run -p
+MemoryMax=...`, swap off) with `GOMEMLIMIT` ~0.9× the box — the production-faithful
+soft+hard pairing — so the sweep can observe real OOM-kills (recorded as the `outcome`
+column) and locate the floor. This needs `systemd` + passwordless `sudo` on the PDP VM
+(GCP default).
+
+Requires a Cerbos binary with the `internal/observability/metrics` GC-CPU collector
+extension (exposes `go_cpu_classes_*`); deploy a locally-built binary via
+`CERBOS_BINARY_PATH=... ./deploy.sh` if testing an unreleased version.
 
 ## Environment Variables
 
@@ -92,6 +115,13 @@ All variables have sensible defaults and can be overridden:
 | `TERRAFORM_DIR` | Path to `infrastructure/environments/gcp_loadtest`; when set, GCP project, zone, and VM names are read from Terraform outputs | *(unset)* |
 | `GCP_PROJECT` | GCP project ID (fallback when `TERRAFORM_DIR` is not set) | Auto-detected from `gcloud config` |
 | `GCP_ZONE` | Compute zone | `us-central1-a` |
+| `STAGING_BUCKET` | GCS bucket (`gs://...`) for staging bulk `deploy.sh` uploads (binary, policy/request/config tarballs) local→GCS→VM via `gcloud storage cp` — reliable + parallel, avoiding the throughput-limited / stall-prone IAP tunnel. **Required** for `deploy.sh`; it fails fast if unset (no slow IAP fallback). | Terraform `staging_bucket` output when `TERRAFORM_DIR` is set |
+
+The bucket and the VM service-account read grant are **provisioned by Terraform**
+(`storage.tf` in `environments/gcp_loadtest`), and `env.sh` auto-reads the
+`staging_bucket` output when `TERRAFORM_DIR` is set — so `deploy.sh` uses GCS staging
+automatically. Without Terraform, create a bucket, set `STAGING_BUCKET=gs://...`, and
+grant the VMs' service account `roles/storage.objectViewer` on it manually.
 
 ### Cerbos
 
@@ -114,7 +144,7 @@ All variables have sensible defaults and can be overridden:
 | `ITERATIONS` | Total requests for throughput test | `1000000` |
 | `NUM_POLICIES` | Number of policy sets (for result file naming) | `1000` |
 | `REQ_KIND` | Request template prefix. Files matching `${REQ_KIND}_*.json` are included. Use `cr` to mix all request types | `cr` |
-| `RPS` | Target requests/sec for sustained-rate test | `500` |
+| `RPS` | Target requests/sec for sustained-rate test, or `auto` (= `RPS_AUTO_PCT`% of the run's throughput). `sweep.sh` defaults to `auto` so each arm's sustained test tracks its own ceiling | `500` (run.sh) / `auto` (sweep.sh) |
 
 ## Verification
 
