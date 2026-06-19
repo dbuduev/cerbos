@@ -151,6 +151,8 @@ _row() {
   local armdir="${LOCAL_RESULTS}/$1" disp="$2" setpoint="${3:-}"
   local vmhwm rps p99 gccpu outcome
   outcome=$(cat "${armdir}/status" 2>/dev/null || echo "n/a")
+  # loadtest.sh rejected this arm as degenerate (auto RPS below RPS_MIN) — overrides "ok".
+  [[ -f "${armdir}/${STORE}_rejected" ]] && outcome="degenerate"
   vmhwm=$(cat "${armdir}/vmhwm_bytes.txt" 2>/dev/null || echo "")
   vmhwm=$(awk -v b="${vmhwm:-0}" 'BEGIN{ if (b>0) printf "%.2f GiB", b/1073741824; else printf "n/a" }')
   rps=$(jq -r '.rps // empty' "${armdir}/disk_throughput.json" 2>/dev/null | awk '{printf "%.0f", $1}')

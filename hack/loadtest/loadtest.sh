@@ -18,6 +18,7 @@ REQ_KIND=${REQ_KIND:-"cr"}
 RPS=${RPS:-"500"}                  # number, or "auto" (target = RPS_AUTO_PCT% of measured throughput)
 RPS_AUTO_PCT=${RPS_AUTO_PCT:-"85"} # used only when RPS=auto
 RPS_ROUND=${RPS_ROUND:-"100"}      # round the auto target to the nearest this (smooths run-to-run variance)
+RPS_MIN=${RPS_MIN:-"500"}          # when RPS=auto, reject the config (skip sustained) if the target falls below this
 SCHEMA_ENFORCEMENT=${SCHEMA_ENFORCEMENT:-"none"}
 STORE=${STORE:-"disk"}
 SERVER=${SERVER:-"localhost:3593"}
@@ -247,6 +248,11 @@ executeTest() {
     RPS=$(awk -v a="$achieved" -v p="$RPS_AUTO_PCT" -v r="$RPS_ROUND" \
       'BEGIN{ if (r < 1) r = 1; x = a*p/100; printf "%.0f", int(x/r + 0.5)*r }')
     printf "RPS=auto: sustained target = %s RPS (%s%% of measured throughput %.0f, rounded to %s)\n" "$RPS" "$RPS_AUTO_PCT" "$achieved" "$RPS_ROUND"
+    if [[ "$RPS" -lt "$RPS_MIN" ]]; then
+      printf "REJECTED: auto RPS %s < RPS_MIN %s — throughput collapsed (%.0f), degenerate config; skipping sustained-rate test\n" \
+        "$RPS" "$RPS_MIN" "$achieved" | tee "${resultPrefix}_rejected"
+      return 0
+    fi
   fi
 
   # Let GC settle before the sustained-rate test
