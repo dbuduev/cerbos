@@ -34,20 +34,12 @@ log "PDP internal IP: ${PDP_IP}"
 
 # --- Arms / parameters (overridable) ---
 NUM_POLICIES=${NUM_POLICIES:-1000}
-read -r -a GOGC_ARMS <<< "${GOGC_ARMS:-100 50 20 10}"
+read -r -a GOGC_ARMS <<< "${GOGC_ARMS:-100}"
 read -r -a MEMLIMIT_MULTS <<< "${MEMLIMIT_MULTS:-2.0 1.5 1.3 1.15}"
 VALID_GOGC=${VALID_GOGC:-50}        # in-envelope validation arm GOGC
 RPS=${RPS:-5000}
 DURATION_SECS=${DURATION_SECS:-120}
 ITERATIONS=${ITERATIONS:-1000000}
-
-FLOOR_METRICS=(
-  process_resident_memory_bytes
-  go_memstats_heap_alloc_bytes
-  go_memstats_heap_inuse_bytes
-  go_memstats_sys_bytes
-  go_memstats_heap_released_bytes
-)
 
 LOCAL_RESULTS="${SCRIPT_DIR}/../results/gcp/sweep-${NUM_POLICIES}"
 rm -rf "$LOCAL_RESULTS"
@@ -70,55 +62,14 @@ run_arm() {
     echo "start_failed" > "${armdir}/status"
     return 0
   fi
-  GSSH "$CLIENT_VM" "rm -rf ${REMOTE_BASE}/results/* 2>/dev/null || true"
-  pdp_reset_vmhwm   # peak now measures the load window, not the build
-
-  # CPU monitor (PDP) for context
-  GSSH "$PDP_VM" "pkill -f 'mpstat -P ALL' 2>/dev/null || true; setsid mpstat -P ALL 1 > /opt/cerbos-loadtest/results/cpu_usage.log 2>&1 < /dev/null &" || true
-
-  # A mid-load cgroup OOM makes the load run error out — tolerate it and detect below.
-  GSSH "$CLIENT_VM" <<ENDSSH || log "load run returned non-zero (arm ${label}) — possible OOM mid-load"
-set -uo pipefail
-. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-cd ${REMOTE_BASE}
-mkdir -p ${REMOTE_BASE}/results
-SERVER="${PDP_IP}:3593" \
-METRICS_URL="http://${PDP_IP}:3592/_cerbos/metrics" \
-WORK_DIR="${REMOTE_BASE}" \
-STORE="${STORE}" \
-RPS="${RPS}" DURATION_SECS="${DURATION_SECS}" ITERATIONS="${ITERATIONS}" \
-${CONCURRENCY:+CONCURRENCY="${CONCURRENCY}"} \
-${CONNECTIONS:+CONNECTIONS="${CONNECTIONS}"} \
-${REQ_KIND:+REQ_KIND="${REQ_KIND}"} \
-${PROTOSET:+PROTOSET="${REMOTE_BASE}/cerbos.protoset"} \
-  nix develop --command bash loadtest.sh -e
-ENDSSH
-
-  GSSH "$PDP_VM" "pkill -f 'mpstat -P ALL' 2>/dev/null || true" || true
-
-  # Outcome: did the cgroup OOM-kill Cerbos during the load?
-  if [[ "$(pdp_cerbos_alive)" == dead ]]; then
-    echo "oom" > "${armdir}/status"
-    log "arm ${label}: Cerbos died during load — cgroup OOM (MemoryMax=${cgroup:-none})"
-  else
-    echo "ok" > "${armdir}/status"
-  fi
-
-  # Peak RSS (VmHWM) over the load window, and post-load accounting.
-  pdp_vmhwm_bytes > "${armdir}/vmhwm_bytes.txt" 2>/dev/null || echo "" > "${armdir}/vmhwm_bytes.txt"
-  pdp_scrape "${FLOOR_METRICS[@]}" > "${armdir}/post_metrics.txt" 2>/dev/null || true
-
-  # Download client results (ghz JSON + *_gc.json + summaries) for this arm.
-  GSSH "$CLIENT_VM" "tar czf /tmp/arm.tar.gz -C ${REMOTE_BASE}/results ." 2>/dev/null || true
-  GSCP "${CLIENT_VM}:/tmp/arm.tar.gz" "/tmp/arm.tar.gz" 2>/dev/null || true
-  [[ -f /tmp/arm.tar.gz ]] && { tar xzf /tmp/arm.tar.gz -C "$armdir"; rm -f /tmp/arm.tar.gz; }
+  run_load_and_capture "$armdir"   # load + VmHWM/OOM/scrape/download into the arm dir
 }
 
 # --- Step 0: anchor floor R, inline, no load (GOGC=100, no limit) ---
 log "Step 0: measuring anchor floor R (GOGC=100, no limit, no load)..."
 GOGC=100 GOMEMLIMIT="" CGROUP_LIMIT="" restart_cerbos
 BUILD_HWM=$(pdp_vmhwm_bytes 2>/dev/null || echo 0)
-pdp_scrape "${FLOOR_METRICS[@]}" > "${LOCAL_RESULTS}/floor.txt"
+pdp_scrape "${PDP_FLOOR_METRICS[@]}" > "${LOCAL_RESULTS}/floor.txt"
 _sys=$(awk '/^go_memstats_sys_bytes/{print $2}' "${LOCAL_RESULTS}/floor.txt")
 _rel=$(awk '/^go_memstats_heap_released_bytes/{print $2}' "${LOCAL_RESULTS}/floor.txt")
 R=$(awk -v s="${_sys:-0}" -v r="${_rel:-0}" 'BEGIN{printf "%d", s-r}')
@@ -138,26 +89,30 @@ done
 # --- Edge 2: GOGC=off; cgroup box = mult x R (hard), GOMEMLIMIT = 0.9 x box (soft).
 #     Production-faithful pairing; shrinking the box finds the floor (OOM at the bottom).
 #     Skip arms whose box is below the build high-water (would OOM during the build). ---
-for mult in "${MEMLIMIT_MULTS[@]}"; do
-  box=$(awk -v r="$R" -v m="$mult" 'BEGIN{printf "%d", r*m}')
-  if [[ "$box" -le "${BUILD_HWM:-0}" ]]; then
-    log "skipping ${mult}xR box (${box} B) — below build high-water ${BUILD_HWM} B (would OOM the build)"
-    continue
-  fi
-  gml=$(awk -v b="$box" 'BEGIN{printf "%d", b*0.9}')
-  run_arm "edge2_m${mult}" "off" "$gml" "$box"
-done
+
+# for mult in "${MEMLIMIT_MULTS[@]}"; do
+#   box=$(awk -v r="$R" -v m="$mult" 'BEGIN{printf "%d", r*m}')
+#   if [[ "$box" -le "${BUILD_HWM:-0}" ]]; then
+#     log "skipping ${mult}xR box (${box} B) — below build high-water ${BUILD_HWM} B (would OOM the build)"
+#     continue
+#   fi
+#   gml=$(awk -v b="$box" 'BEGIN{printf "%d", b*0.9}')
+#   run_arm "edge2_m${mult}" "off" "$gml" "$box"
+# done
 
 # --- Validation: in-envelope (GOGC=x, generous box ~2xR, GOMEMLIMIT 0.9x box; should not bind) ---
-_valid_box=$(awk -v r="$R" 'BEGIN{printf "%d", r*2.0}')
-_valid_gml=$(awk -v b="$_valid_box" 'BEGIN{printf "%d", b*0.9}')
-run_arm "valid_inenvelope_gogc${VALID_GOGC}" "$VALID_GOGC" "$_valid_gml" "$_valid_box"
+
+# _valid_box=$(awk -v r="$R" 'BEGIN{printf "%d", r*2.0}')
+# _valid_gml=$(awk -v b="$_valid_box" 'BEGIN{printf "%d", b*0.9}')
+# run_arm "valid_inenvelope_gogc${VALID_GOGC}" "$VALID_GOGC" "$_valid_gml" "$_valid_box"
 
 # --- Hard-OOM demo: cgroup just above the build high-water, NO GOMEMLIMIT, GOGC=100.
 #     The runtime doesn't know the box, so under load the sawtooth grows past it -> cgroup
 #     OOM. Demonstrates why the soft GOMEMLIMIT backstop is needed (plan §4.3). ---
-_oom_box=$(awk -v h="${BUILD_HWM:-0}" 'BEGIN{printf "%d", h*1.05}')
-run_arm "oom_demo_nolimit" "100" "" "$_oom_box"
+
+# _oom_box=$(awk -v h="${BUILD_HWM:-0}" 'BEGIN{printf "%d", h*1.05}')
+# run_arm "oom_demo_nolimit" "100" "" "$_oom_box"
+
 # NOTE: forced-overload of the *shipped* config (GOGC=x + box, then drive concurrency/
 # live-set up until the soft cap binds and degrades gracefully) is still manual — vary
 # CONCURRENCY/NUM_POLICIES against a deployed validation arm and watch GC CPU vs OOM.
@@ -174,6 +129,8 @@ emit_tables() {
     printf '| Arm | RSS peak | GC CPU%% | Throughput | p99 (ms) | outcome |\n|---|--:|--:|--:|--:|---|\n'
     for g in "${GOGC_ARMS[@]}"; do _row "edge1_gogc${g}" "GOGC=${g}"; done
 
+    return 0
+    
     printf '\n## Edge 2 — backstop cost (GOGC=off; cgroup box = mult x R, GOMEMLIMIT ~0.9x box)\n\n'
     printf '| Arm | box (cgroup) | RSS peak | GC CPU%% | Throughput | p99 (ms) | outcome |\n|---|--:|--:|--:|--:|--:|---|\n'
     for mult in "${MEMLIMIT_MULTS[@]}"; do

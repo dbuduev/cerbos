@@ -207,6 +207,99 @@ pdp_cerbos_alive() {
   fi
 }
 
+# PDP footprint gauges scraped post-load / at the settled floor (Sys-HeapReleased
+# accounting + resident footprint). Used by run_load_and_capture and the sweep's Step 0.
+PDP_FLOOR_METRICS=(
+  process_resident_memory_bytes
+  go_memstats_heap_alloc_bytes
+  go_memstats_heap_inuse_bytes
+  go_memstats_sys_bytes
+  go_memstats_heap_released_bytes
+)
+
+# Print an mpstat CPU-utilization summary (avg/max %used from the "all" rows).
+# Args: $1=label  $2=logfile
+cpu_summary() {
+  local label="$1" logfile="$2"
+  if [[ ! -f "$logfile" ]]; then
+    printf "  %-10s (no data)\n" "$label"
+    return
+  fi
+  awk '/^ *[0-9].*all/ { idle = $NF; sum += idle; n++; if (n == 1 || idle < min_idle) min_idle = idle }
+       END { if (n > 0) printf "  %-10s avg %5.1f%%   max %5.1f%%   (%d samples)\n", label, 100 - sum/n, 100 - min_idle, n }' \
+    label="$label" "$logfile"
+}
+
+# Run the load (warmup + sustained + throughput via loadtest.sh -e on the client) against
+# the already-running PDP, capturing per-run signals into RESULT_DIR: peak RSS (VmHWM,
+# build excluded), ghz JSON + GC counters (from loadtest.sh), post-load accounting,
+# liveness/OOM status, both VMs' mpstat logs, and a CPU summary. Cerbos must already be
+# running (caller restarts it with any knobs first); reads load knobs (RPS/DURATION_SECS/
+# ITERATIONS/CONCURRENCY/...) and the global PDP_IP from the environment.
+# Args: $1=result_dir (local).
+run_load_and_capture() {
+  local result_dir="$1"
+  mkdir -p "$result_dir"
+
+  # Fresh remote results, and reset the peak so VmHWM measures the load window (build
+  # excluded).
+  GSSH "$PDP_VM" "rm -rf ${REMOTE_BASE}/results/* 2>/dev/null || true"
+  GSSH "$CLIENT_VM" "rm -rf ${REMOTE_BASE}/results/* 2>/dev/null || true"
+  pdp_reset_vmhwm
+
+  # CPU monitors on both VMs.
+  GSSH "$PDP_VM" "pkill -f 'mpstat -P ALL' 2>/dev/null || true; setsid mpstat -P ALL 1 > ${REMOTE_BASE}/results/cpu_usage.log 2>&1 < /dev/null &" || true
+  GSSH "$CLIENT_VM" "pkill -f 'mpstat -P ALL' 2>/dev/null || true; setsid mpstat -P ALL 1 > ${REMOTE_BASE}/results/client_cpu_usage.log 2>&1 < /dev/null &" || true
+
+  log "Running load on Client VM (${CLIENT_VM})..."
+  # A mid-load cgroup OOM makes loadtest.sh error out — tolerate it and detect below.
+  GSSH "$CLIENT_VM" <<ENDSSH || log "load run returned non-zero — possible OOM mid-load"
+set -uo pipefail
+. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+cd ${REMOTE_BASE}
+mkdir -p ${REMOTE_BASE}/results
+SERVER="${PDP_IP}:3593" \
+METRICS_URL="http://${PDP_IP}:3592/_cerbos/metrics" \
+WORK_DIR="${REMOTE_BASE}" \
+STORE="${STORE}" \
+${RPS:+RPS="${RPS}"} \
+${DURATION_SECS:+DURATION_SECS="${DURATION_SECS}"} \
+${ITERATIONS:+ITERATIONS="${ITERATIONS}"} \
+${CONCURRENCY:+CONCURRENCY="${CONCURRENCY}"} \
+${CONNECTIONS:+CONNECTIONS="${CONNECTIONS}"} \
+${REQ_KIND:+REQ_KIND="${REQ_KIND}"} \
+${NUM_POLICIES:+NUM_POLICIES="${NUM_POLICIES}"} \
+${PROTOSET:+PROTOSET="${REMOTE_BASE}/cerbos.protoset"} \
+  nix develop --command bash loadtest.sh -e
+ENDSSH
+
+  GSSH "$PDP_VM" "pkill -f 'mpstat -P ALL' 2>/dev/null || true" || true
+  GSSH "$CLIENT_VM" "pkill -f 'mpstat -P ALL' 2>/dev/null || true" || true
+
+  # Per-run captures: OOM status, peak RSS, post-load accounting.
+  if [[ "$(pdp_cerbos_alive)" == dead ]]; then
+    echo oom > "${result_dir}/status"
+    log "Cerbos died during load — likely cgroup OOM"
+  else
+    echo ok > "${result_dir}/status"
+  fi
+  pdp_vmhwm_bytes > "${result_dir}/vmhwm_bytes.txt" 2>/dev/null || echo "" > "${result_dir}/vmhwm_bytes.txt"
+  pdp_scrape "${PDP_FLOOR_METRICS[@]}" > "${result_dir}/post_metrics.txt" 2>/dev/null || true
+
+  # Download PDP cpu log + client results (ghz JSON, *_gc.json, summaries) into result_dir.
+  GSSH "$PDP_VM" "tar czf /tmp/pdp-results.tar.gz -C ${REMOTE_BASE}/results cpu_usage.log" 2>/dev/null || true
+  GSCP "${PDP_VM}:/tmp/pdp-results.tar.gz" "/tmp/pdp-results.tar.gz" 2>/dev/null || true
+  [[ -f /tmp/pdp-results.tar.gz ]] && { tar xzf /tmp/pdp-results.tar.gz -C "$result_dir"; mv -f "${result_dir}/cpu_usage.log" "${result_dir}/pdp_cpu_usage.log" 2>/dev/null; rm -f /tmp/pdp-results.tar.gz; }
+
+  GSSH "$CLIENT_VM" "tar czf /tmp/client-results.tar.gz -C ${REMOTE_BASE}/results ." 2>/dev/null || true
+  GSCP "${CLIENT_VM}:/tmp/client-results.tar.gz" "/tmp/client-results.tar.gz" 2>/dev/null || true
+  [[ -f /tmp/client-results.tar.gz ]] && { tar xzf /tmp/client-results.tar.gz -C "$result_dir"; rm -f /tmp/client-results.tar.gz; }
+
+  printf "\nCPU utilization (%% of all cores):\n"
+  cpu_summary "PDP" "${result_dir}/pdp_cpu_usage.log"
+  cpu_summary "Client" "${result_dir}/client_cpu_usage.log"
+}
+
 check_print_summary() {
   if [[ "$POLICIES_ONLY" == false ]] && [[ ! -f "${WORK_DIR}/printsummary" ]]; then
     log "Building printsummary..."
