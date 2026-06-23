@@ -307,3 +307,9 @@ check_print_summary() {
     popd > /dev/null
   fi
 }
+
+humanise() {
+  local val="$1"
+  
+  numfmt --to=iec-i --suffix=B "$val" || printf "%s" "$val"
+}

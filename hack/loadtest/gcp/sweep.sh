@@ -8,7 +8,7 @@
 #   Step 0  measure the anchor floor R (Sys-HeapReleased) inline, no load
 #   Edge 1  vary GOGC, no limit                          → sizing curve
 #   Edge 2  GOGC=off, vary GOMEMLIMIT = mult x R         → backstop cost
-#   Valid   GOGC=x + generous GOMEMLIMIT, in-envelope    → reproduces Edge-1
+#   Valid   GOGC=x + generous GOMEMLIMIT (cap loose)     → reproduces Edge-1
 # Per arm: restart Cerbos with the knobs, reset VmHWM, run loadtest.sh -e, capture peak
 # RSS (VmHWM), per-phase GC counters, and ghz throughput/p99. Emits the tables.
 # See reports/loadtest-memory-plan.md and reports/docs/gc-metrics.md.
@@ -34,9 +34,10 @@ log "PDP internal IP: ${PDP_IP}"
 
 # --- Arms / parameters (overridable) ---
 NUM_POLICIES=${NUM_POLICIES:-1000}
-read -r -a GOGC_ARMS <<< "${GOGC_ARMS:-100 50 20 10}"
+# read -r -a GOGC_ARMS <<< "${GOGC_ARMS:-100 50 20 10}"
+GOGC_ARMS=()
 read -r -a MEMLIMIT_MULTS <<< "${MEMLIMIT_MULTS:-2.0 1.5 1.3 1.15}"
-VALID_GOGC=${VALID_GOGC:-50}        # in-envelope validation arm GOGC
+VALID_GOGC=${VALID_GOGC:-50}        # cap-loose validation arm GOGC
 RPS=${RPS:-auto}   # per-arm: sustained target = RPS_AUTO_PCT% of that arm's measured throughput
 DURATION_SECS=${DURATION_SECS:-120}
 ITERATIONS=${ITERATIONS:-1000000}
@@ -73,7 +74,7 @@ pdp_scrape "${PDP_FLOOR_METRICS[@]}" > "${LOCAL_RESULTS}/floor.txt"
 _sys=$(awk '/^go_memstats_sys_bytes/{print $2}' "${LOCAL_RESULTS}/floor.txt")
 _rel=$(awk '/^go_memstats_heap_released_bytes/{print $2}' "${LOCAL_RESULTS}/floor.txt")
 R=$(awk -v s="${_sys:-0}" -v r="${_rel:-0}" 'BEGIN{printf "%d", s-r}')
-log "anchor R (Sys-HeapReleased) = ${R} bytes; build high-water (VmHWM) = ${BUILD_HWM} bytes"
+log "anchor R (Sys-HeapReleased) = $(humanise "${R}") bytes; build high-water (VmHWM) = $(humanise "${BUILD_HWM}") bytes"
 { echo "R_bytes=${R}"; echo "build_hwm_bytes=${BUILD_HWM}"; } > "${LOCAL_RESULTS}/floor.meta"
 
 if [[ "${R:-0}" -le 0 ]]; then
@@ -100,11 +101,11 @@ for mult in "${MEMLIMIT_MULTS[@]}"; do
   run_arm "edge2_m${mult}" "off" "$gml" "$box"
 done
 
-# --- Validation: in-envelope (GOGC=x, generous box ~2xR, GOMEMLIMIT 0.9x box; should not bind) ---
+# --- Validation: cap loose (GOGC=x, generous box ~2xR, GOMEMLIMIT 0.9x box; should not bind) ---
 
 _valid_box=$(awk -v r="$R" 'BEGIN{printf "%d", r*2.0}')
 _valid_gml=$(awk -v b="$_valid_box" 'BEGIN{printf "%d", b*0.9}')
-run_arm "valid_inenvelope_gogc${VALID_GOGC}" "$VALID_GOGC" "$_valid_gml" "$_valid_box"
+run_arm "valid_caploose_gogc${VALID_GOGC}" "$VALID_GOGC" "$_valid_gml" "$_valid_box"
 
 # --- Hard-OOM demo: cgroup just above the build high-water, NO GOMEMLIMIT, GOGC=100.
 #     The runtime doesn't know the box, so under load the sawtooth grows past it -> cgroup
@@ -139,7 +140,7 @@ emit_tables() {
 
     printf '\n## Validation\n\n'
     printf '| Arm | box (cgroup) | RSS peak | GC CPU%% | Throughput | p99 (ms) | outcome |\n|---|--:|--:|--:|--:|--:|---|\n'
-    _row "valid_inenvelope_gogc${VALID_GOGC}" "GOGC=${VALID_GOGC}, box~2R" "$(awk -v r="$R" 'BEGIN{printf "%d", r*2.0}')"
+    _row "valid_caploose_gogc${VALID_GOGC}" "GOGC=${VALID_GOGC}, box~2R" "$(awk -v r="$R" 'BEGIN{printf "%d", r*2.0}')"
     _row "oom_demo_nolimit" "GOGC=100, no GOMEMLIMIT" "$(awk -v h="${BUILD_HWM:-0}" 'BEGIN{printf "%d", h*1.05}')"
   } > "$out"
   log "Summary table: ${out}"
