@@ -20,6 +20,12 @@ else
 fi
 log "PDP internal IP: ${PDP_IP}"
 
+GSSH "$PDP_VM" <<ENDSSH || true
+echo 5 | sudo tee /proc/\$(pgrep -f '${REMOTE_BASE}/bin/cerbos server' | head -1)/clear_refs >/dev/null 2>&1 || true
+ENDSSH
+
 run_load_and_capture "${SCRIPT_DIR}/../results/gcp"
 
 log "Results saved to hack/loadtest/results/gcp/"
+
+log "VmHWM: $(pdp_vmhwm_human)"
