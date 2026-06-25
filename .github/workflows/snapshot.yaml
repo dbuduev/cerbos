@@ -32,7 +32,7 @@ jobs:
           write_build_cache: true
 
       - name: Install tools
-        uses: cerbos/actions/install-tools@40e604de065cdc6dc95d0351d692f25eaee79bbe # main
+        uses: cerbos/actions/install-tools@3e513163c6e062721f84cd58125a5dfa5293e3b2 # main
         with:
           tools: |-
             buf
@@ -42,7 +42,7 @@ jobs:
         run: just generate
 
       - name: Check repo status
-        uses: cerbos/actions/check-repo-status@40e604de065cdc6dc95d0351d692f25eaee79bbe # main
+        uses: cerbos/actions/check-repo-status@3e513163c6e062721f84cd58125a5dfa5293e3b2 # main
 
       - name: Test
         run: just test-integration
@@ -108,7 +108,7 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Log in to ECR
-        uses: aws-actions/amazon-ecr-login@fa648b43de3d4d023bcb3f89ed6940096949c419 # v2.1.5
+        uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2.1.6
         with:
           registries: ${{ vars.AWS_CONTAINER_REGISTRY_ID }}
 
@@ -122,7 +122,7 @@ jobs:
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       - name: Install tools
-        uses: cerbos/actions/install-tools@40e604de065cdc6dc95d0351d692f25eaee79bbe # main
+        uses: cerbos/actions/install-tools@3e513163c6e062721f84cd58125a5dfa5293e3b2 # main
         with:
           tools: |-
             goreleaser
@@ -181,7 +181,7 @@ jobs:
           persist-credentials: false
 
       - name: Push to BSR
-        uses: cerbos/actions/buf@40e604de065cdc6dc95d0351d692f25eaee79bbe # main
+        uses: cerbos/actions/buf@3e513163c6e062721f84cd58125a5dfa5293e3b2 # main
         with:
           push: true
           token: ${{ secrets.BUF_TOKEN }}
