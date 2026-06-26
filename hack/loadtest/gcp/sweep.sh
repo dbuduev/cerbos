@@ -34,7 +34,7 @@ log "PDP internal IP: ${PDP_IP}"
 
 # --- Arms / parameters (overridable) ---
 NUM_POLICIES=${NUM_POLICIES:-1000}
-read -r -a GOGC_ARMS <<< "${GOGC_ARMS:-100 50 20 10}"
+read -r -a GOGC_ARMS <<< "${GOGC_ARMS:-100 50 20}"
 # GOGC_ARMS=()
 read -r -a MEMLIMIT_MULTS <<< "${MEMLIMIT_MULTS:-2.0 1.5 1.3 1.15}"
 VALID_GOGC=${VALID_GOGC:-50}        # cap-loose validation arm GOGC
@@ -64,6 +64,7 @@ run_arm() {
     return 0
   fi
   run_load_and_capture "$armdir"   # load + VmHWM/OOM/scrape/download into the arm dir
+  log "VmHWM: $(pdp_vmhwm_human)"
 }
 
 # --- Step 0: floor quantities, inline, no load (GOGC=100, no limit) ---
