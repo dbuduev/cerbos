@@ -174,11 +174,11 @@ _pdp_cerbos_pid_expr="\$(pgrep -x cerbos | head -1)"
 
 # Echo the running Cerbos VmHWM in bytes (peak RSS since last reset / process start).
 pdp_vmhwm_bytes() {
-  GSSH "$PDP_VM" "awk '/^VmHWM:/{print \$2*1024}' /proc/${_pdp_cerbos_pid_expr}/status"
+  GSSH "$PDP_VM" "[[ -n "${_pdp_cerbos_pid_expr}" ]] && awk '/^VmHWM:/{print \$2*1024}' /proc/${_pdp_cerbos_pid_expr}/status"
 }
 
 pdp_vmhwm_human() {
-  GSSH "$PDP_VM" "awk '/^VmHWM:/{printf \"%dKi\n\", \$2}' /proc/${_pdp_cerbos_pid_expr}/status | numfmt --to=iec-i --from=iec-i --suffix=B"
+  GSSH "$PDP_VM" "[[ -n "${_pdp_cerbos_pid_expr}" ]] && awk '/^VmHWM:/{printf \"%dKi\n\", \$2}' /proc/${_pdp_cerbos_pid_expr}/status | numfmt --to=iec-i --from=iec-i --suffix=B"
 }
 
 # Echo "metric value" lines for the named PDP metrics. The endpoint is on the PDP's
