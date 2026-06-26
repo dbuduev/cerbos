@@ -78,7 +78,7 @@ BUILD_HWM=$(pdp_vmhwm_bytes 2>/dev/null || echo 0)
 pdp_scrape "${PDP_FLOOR_METRICS[@]}" > "${LOCAL_RESULTS}/floor.txt"
 _sys=$(awk '/^go_memstats_sys_bytes/{print $2}' "${LOCAL_RESULTS}/floor.txt")
 _rel=$(awk '/^go_memstats_heap_released_bytes/{print $2}' "${LOCAL_RESULTS}/floor.txt")
-_rss=$(awk '/^process_resident_memory_bytes/{print $2}' "${LOCAL_RESULTS}/floor.txt")
+_rss=$(awk '/^process_resident_memory_bytes/{printf "%d", $2; exit}' "${LOCAL_RESULTS}/floor.txt")
 R=$(awk -v s="${_sys:-0}" -v r="${_rel:-0}" 'BEGIN{printf "%d", s-r}')
 # O = RSS - R, clamped >=0 (R can exceed RSS when arenas are reserved-but-unfaulted).
 OFFSET=$(awk -v rss="${_rss:-0}" -v rr="${R:-0}" 'BEGIN{o=rss-rr; printf "%d", (o>0?o:0)}')

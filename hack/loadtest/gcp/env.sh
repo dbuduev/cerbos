@@ -313,7 +313,9 @@ check_print_summary() {
 }
 
 humanise() {
-  local val="$1"
-  
-  numfmt --to=iec-i --suffix=B "$val" || printf "%s" "$val"
+  # Tolerate floats / scientific notation (Prometheus scrape values) — numfmt only takes
+  # integers, so normalise first; awk parses any numeric form (empty/non-numeric -> 0).
+  local val
+  val=$(awk -v v="${1:-0}" 'BEGIN{printf "%d", v}')
+  numfmt --to=iec-i --suffix=B "$val" 2>/dev/null || printf "%s" "$val"
 }
