@@ -54,8 +54,7 @@ read -r -a MEMLIMIT_MULTS <<< "${MEMLIMIT_MULTS:-2.0 1.8 1.5 1.15}"
 VALID_GOGC=${VALID_GOGC:-50}        # cap-loose validation arm GOGC
 # Headroom between the soft GOMEMLIMIT and the hard cgroup: cgroup = GOMEMLIMIT + O + safety,
 # safety = SAFETY_FRAC * GOMEMLIMIT. Needed because the soft target (GOMEMLIMIT + offset) would
-# otherwise equal the hard cap, leaving zero room for GC-float / load-time offset growth -> the
-# soft cap never bites first and arms OOM at the edge (observed at mult=2.0). See plan §4.4.
+# otherwise equal the hard cap, leaving zero room for GC-float / load-time offset growth.
 SAFETY_FRAC=${SAFETY_FRAC:-0.2}
 RPS=${RPS:-auto}   # per-arm: sustained target = RPS_AUTO_PCT% of that arm's measured throughput
 DURATION_SECS=${DURATION_SECS:-120}
@@ -99,10 +98,7 @@ cgroup_for() { awk -v g="$1" -v o="${OFFSET:-0}" -v s="${SAFETY_FRAC:-0}" 'BEGIN
 
 # --- Step 0: floor quantities, inline, no load (GOGC=100, no limit) ---
 # Reads (cold, settled): R = Sys-HeapReleased (runtime-managed floor; the unit GOMEMLIMIT
-# is accounted in), settled RSS, the off-runtime offset O = RSS-R (binary/stacks/maps the
-# cgroup counts but GOMEMLIMIT does NOT), and BUILD_HWM (build peak RSS). Edge 2 sweeps the
-# soft GOMEMLIMIT = mult*R and pairs the hard cgroup = GOMEMLIMIT + O + safety, so the cgroup is
-# RSS-correct and sits an offset + safety above the soft cap (soft bites first). See plan §4.4.
+# is accounted in), settled RSS, the off-runtime offset O = RSS-R, and BUILD_HWM.
 log "Step 0: measuring floor quantities (GOGC=100, no limit, no load)..."
 GOGC=100 GOMEMLIMIT="" CGROUP_LIMIT="" restart_cerbos
 BUILD_HWM=$(pdp_vmhwm_bytes 2>/dev/null || echo 0)
@@ -127,13 +123,8 @@ for g in "${GOGC_ARMS[@]}"; do
 done
 
 # --- Edge 2: GOGC=off; soft GOMEMLIMIT = mult x R, hard cgroup = GOMEMLIMIT + O + safety (RSS).
-#     The cgroup sits an offset + safety margin above the soft cap, so the runtime GCs
-#     (graceful) before the kernel OOM-kills — without the safety the soft target equals the
-#     cap and arms OOM at the edge. Shrinking mult tightens the soft cap toward the live set
-#     -> thrash, then OOM at the bottom. Guard: skip any arm whose cgroup is below BUILD_HWM.
-#     NOTE: MEMLIMIT_MULTS are multiples of R (the runtime floor where the thrash physics
-#     lives), NOT of the cgroup; extend them downward (e.g. 1.0, 0.85) if no arm thrashes. ---
-
+#     Shrinking mult tightens the soft cap toward the live set.
+#     Guard: skip any arm whose cgroup is below BUILD_HWM. ---
 for mult in "${MEMLIMIT_MULTS[@]}"; do
   gml=$(awk -v r="$R" -v m="$mult" 'BEGIN{printf "%d", r*m}')
   box=$(cgroup_for "$gml")
@@ -151,15 +142,10 @@ _valid_box=$(cgroup_for "$_valid_gml")
 run_arm "valid_caploose_gogc${VALID_GOGC}" "$VALID_GOGC" "$_valid_gml" "$_valid_box"
 
 # --- Hard-OOM demo: cgroup just above the build high-water, NO GOMEMLIMIT, GOGC=100.
-#     The runtime doesn't know the box, so under load the sawtooth grows past it -> cgroup
-#     OOM. Demonstrates why the soft GOMEMLIMIT backstop is needed (plan §4.3). ---
+#     Demonstrates why the soft GOMEMLIMIT backstop is needed. ---
 
 _oom_box=$(awk -v h="${BUILD_HWM:-0}" 'BEGIN{printf "%d", h*1.05}')
 run_arm "oom_demo_nolimit" "100" "" "$_oom_box"
-
-# NOTE: forced-overload of the *shipped* config (GOGC=x + box, then drive concurrency/
-# live-set up until the soft cap binds and degrades gracefully) is still manual — vary
-# CONCURRENCY/NUM_POLICIES against a deployed validation arm and watch GC CPU vs OOM.
 
 # --- Emit the §4.6 tables from the per-arm JSON (jq on ghz output; robust) ---
 emit_tables() {
@@ -187,22 +173,21 @@ emit_tables() {
 
     printf '\n## Validation\n\n'
     printf '| Arm | cgroup | RSS peak | GC CPU%% | Max RPS | Sust RPS | p99@sust (ms) | stalls/gaps | outcome |\n|---|--:|--:|--:|--:|--:|--:|--:|---|\n'
-    _row "valid_caploose_gogc${VALID_GOGC}" "GOGC=${VALID_GOGC}, GOMEMLIMIT=2R" "$(cgroup_for "$(awk -v r="$R" 'BEGIN{printf "%d", r*2.0}')")"
-    _row "oom_demo_nolimit" "GOGC=100, no GOMEMLIMIT" "$(awk -v h="${BUILD_HWM:-0}" 'BEGIN{printf "%d", h*1.05}')"
+    _row "valid_caploose_gogc${VALID_GOGC}" "GOGC=${VALID_GOGC}, GOMEMLIMIT=2R" "$_valid_box"
+    _row "oom_demo_nolimit" "GOGC=100, no GOMEMLIMIT" "$_oom_box"
   } > "$out"
   log "Summary table: ${out}"
   cat "$out"
 }
 
-# Read a jq value from FILE (empty if the file is missing or jq fails) — never aborts the
-# caller under `set -e`, so a table row for an OOM'd arm (missing result JSON) won't crash
-# the whole summary. Args: $1=file $2=jq filter.
+# Read a jq value from FILE (empty if the file is missing or jq fails) - never aborts the
+# caller.
 _jqf() { [[ -f "$1" ]] && jq -r "$2" "$1" 2>/dev/null || true; }
 
 # Stall/gap window counts from the sustained-rate run (the provisioned operating point),
 # via analyse_latency.sh defaults (p95 slow threshold, 1s windows, stall = window >10% slow,
 # gap = window <75% of mean throughput). Returns "S/G" (e.g. "0/0", "30/0"), or "n/a" when the
-# result JSON is missing/empty (an OOM'd arm). Never aborts the caller under `set -e`.
+# result JSON is missing/empty (an OOM'd arm). Never aborts the caller.
 _stallgap() {
   local f="${1}/disk_rps.json" rep s g
   [[ -s "$f" ]] || { printf 'n/a'; return 0; }
@@ -217,12 +202,12 @@ _row() {
   local armdir="${LOCAL_RESULTS}/$1" disp="$2" setpoint="${3:-}"
   local vmhwm rps srps p99 gccpu sg outcome
   outcome=$(cat "${armdir}/status" 2>/dev/null || echo "n/a")
-  # loadtest.sh rejected this arm as degenerate (auto RPS below RPS_MIN) — overrides "ok".
+  # loadtest.sh rejected this arm as degenerate (auto RPS below RPS_MIN); overrides "ok".
   [[ -f "${armdir}/${STORE}_rejected" ]] && outcome="degenerate"
   vmhwm=$(cat "${armdir}/vmhwm_bytes.txt" 2>/dev/null || echo "")
   vmhwm=$(awk -v b="${vmhwm:-0}" 'BEGIN{ if (b>0) printf "%.2f GiB", b/1073741824; else printf "n/a" }')
   # rps = max-rate throughput test; srps/p99 = the sustained-rate test (run at RPS_AUTO_PCT% of
-  # rps), so p99 is the latency at the srps rate — report both so they're not read in isolation.
+  # rps), so p99 is the latency at the srps rate.
   rps=$(_jqf "${armdir}/disk_throughput.json" '.rps // empty' | awk '{if($1!="")printf "%.0f", $1}')
   srps=$(_jqf "${armdir}/disk_rps.json" '.rps // empty' | awk '{if($1!="")printf "%.0f", $1}')
   p99=$(_jqf "${armdir}/disk_rps.json" '[.latencyDistribution[]? | select(.percentage==99) | .latency][0] // empty' | awk '{ if ($1!="") printf "%.2f", $1/1e6 }')
