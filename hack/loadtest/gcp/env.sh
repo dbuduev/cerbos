@@ -147,7 +147,7 @@ for i in \$(seq 1 30); do
     healthy=true
     break
   fi
-  sleep 2
+  sleep 5
 done
 if [ "\$healthy" != "true" ]; then
   echo "ERROR: Cerbos health check failed after 30 attempts" >&2
