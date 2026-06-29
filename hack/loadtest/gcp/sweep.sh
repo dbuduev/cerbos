@@ -12,6 +12,20 @@
 # Per arm: restart Cerbos with the knobs, reset VmHWM, run loadtest.sh -e, capture peak
 # RSS (VmHWM), per-phase GC counters, and ghz throughput/p99. Emits the tables.
 # See reports/loadtest-memory-plan.md and reports/docs/gc-metrics.md.
+#
+# Legend (the two limits live in two unit systems — that is the whole subtlety):
+#   RSS        kernel resident set size; what the cgroup limits (process_resident_memory_bytes).
+#   R          = Sys - HeapReleased. Runtime-managed memory floor, cold/no-load. The unit
+#              GOMEMLIMIT is accounted in. EXCLUDES the binary/off-runtime memory.
+#   O          = RSS - R. Off-runtime offset: binary text+data, goroutine stacks, file maps.
+#              The cgroup counts it; GOMEMLIMIT does NOT. Roughly constant in policy count.
+#   VmHWM      peak RSS over a window (/proc/<pid>/status), reset per arm to time the load window.
+#   BUILD_HWM  peak RSS during the index build at startup; a hard cgroup must clear it or
+#              the process OOMs before it can serve.
+#   mult       dimensionless GOMEMLIMIT multiple of R, swept downward toward the thrash floor.
+#   GOMEMLIMIT = mult*R. Soft cap (graceful continuous-GC backstop), in R-units (no binary).
+#   cgroup     = GOMEMLIMIT + O + safety. Hard MemoryMax, in RSS-units; safety = SAFETY_FRAC*
+#              GOMEMLIMIT gives the soft cap room to bite (GC) before the kernel OOM-kills.
 
 set -euo pipefail
 
