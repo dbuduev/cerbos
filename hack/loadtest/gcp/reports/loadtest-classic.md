@@ -11,6 +11,7 @@
 - Under sustained load at ~85% of capacity, p99 grows from 11.6 ms at 800 policies to 40.8 ms at 40K.
 - RSS peak is 133 MiB at 800 policies, 224 MiB at 8K, and 748 MiB at 40K, growing sub-linearly with policy count.
 - GC CPU stays around 8-9% across the range, with no sustained stalls or throughput gaps.
+- To provision for max RPS, run `GOGC=100` and set a cgroup MemoryMax of 256 MiB at 800 policies, 512 MiB at 8K, or 1.5 GiB at 40K, with a `GOMEMLIMIT` backstop below the cap.
 
 ## Performance (default config, `GOGC=100`)
 
@@ -39,7 +40,19 @@ p50 stays low, between 1.8 and 3.2 ms: with about 15% headroom below capacity, m
 
 RSS peak is 133 MiB at 800 policies, 224 MiB at 8K, and 748 MiB at 40K. It grows sub-linearly with policy count: at low counts most of the footprint is fixed runtime and binary overhead, and the per-policy cost of the rule table is small. The index uses lazy sparse bitmaps and a map for fqnBindings, and the build streams one policy at a time, so its peak working set is a single policy.
 
-For sizing a `GOMEMLIMIT` and cgroup operating point at a target policy count, see `loadtest-memory-plan.md` section 4.8.
+## Provisioning for Max RPS
+
+For maximum throughput, run the default `GOGC=100` and add a memory backstop: a soft `GOMEMLIMIT` paired with a hard cgroup MemoryMax. The cgroup MemoryMax is the figure to provision.
+
+| Policies | Loaded RSS peak | GOMEMLIMIT | cgroup MemoryMax |
+|---------:|----------------:|-----------:|-----------------:|
+| 800 | 133 MiB | 160 MiB | 256 MiB |
+| 8K | 224 MiB | 320 MiB | 512 MiB |
+| 40K | 748 MiB | 1.2 GiB | 1.5 GiB |
+
+`GOMEMLIMIT` is set to about twice the loaded runtime heap (the loaded RSS peak minus ~60 MiB of binary and stack overhead), so it sits well above the working set and does not bind in steady state. Throughput therefore stays at the numbers above; the backstop engages only if the live set later grows past the box, spending some CPU on extra GC to stay under the limit instead of being OOM-killed. The cgroup MemoryMax adds the ~60 MiB back plus a ~20% safety margin, so the soft limit takes effect before the kernel OOM-kills, and it clears the build-time peak as well.
+
+For a policy count between these points, interpolate the loaded RSS peak linearly and apply the same formula.
 
 ## Connection Count (HOL Blocking)
 
@@ -51,3 +64,4 @@ Fewer connections is slightly faster: one connection gives the lowest latency an
 2. Under sustained load at about 85% of capacity, p99 rises gradually from 11.6 ms at 800 policies to 40.8 ms at 40K.
 3. RSS peak ranges from 133 MiB at 800 policies to 748 MiB at 40K and grows sub-linearly with policy count.
 4. GC CPU stays around 8-9% across the range, with no sustained stalls or throughput gaps.
+5. For max RPS, run `GOGC=100` and provision a cgroup MemoryMax of 256 MiB at 800 policies, 512 MiB at 8K, or 1.5 GiB at 40K, with a `GOMEMLIMIT` backstop sized just below the cap.
