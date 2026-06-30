@@ -51,7 +51,7 @@ NUM_POLICIES=${NUM_POLICIES:-1000}
 read -r -a GOGC_ARMS <<< "${GOGC_ARMS:-100 50 20}"
 # GOGC_ARMS=()
 read -r -a MEMLIMIT_MULTS <<< "${MEMLIMIT_MULTS:-2.0 1.8 1.5 1.15}"
-VALID_GOGC=${VALID_GOGC:-50}        # cap-loose validation arm GOGC
+VALID_H=${VALID_H:-1.5}             # validation arm: GOMEMLIMIT = VALID_H * (loaded peak - O)
 # Headroom between the soft GOMEMLIMIT and the hard cgroup: cgroup = GOMEMLIMIT + O + safety,
 # safety = SAFETY_FRAC * GOMEMLIMIT. Needed because the soft target (GOMEMLIMIT + offset) would
 # otherwise equal the hard cap, leaving zero room for GC-float / load-time offset growth.
@@ -135,11 +135,20 @@ for mult in "${MEMLIMIT_MULTS[@]}"; do
   run_arm "edge2_m${mult}" "off" "$gml" "$box"
 done
 
-# --- Validation: cap loose (GOGC=x; GOMEMLIMIT = 2xR generous, cgroup = +O+safety; should not bind) ---
+# --- Validation: the recommended max-RPS config (GOGC=100 + lean GOMEMLIMIT backstop).
+#     GOMEMLIMIT = VALID_H * (loaded RSS peak - O), with the loaded peak taken from the GOGC=100
+#     Edge-1 arm and the precise O from Step 0; cgroup = GOMEMLIMIT + O + safety. Confirms the
+#     recommended provisioning reproduces the uncapped Edge-1 GOGC=100 numbers, i.e. the lean cap
+#     does NOT bind. See plan §4.8 and the loadtest reports' Provisioning section. ---
 
-_valid_gml=$(awk -v r="$R" 'BEGIN{printf "%d", r*2.0}')
-_valid_box=$(cgroup_for "$_valid_gml")
-run_arm "valid_caploose_gogc${VALID_GOGC}" "$VALID_GOGC" "$_valid_gml" "$_valid_box"
+_valid_peak=$(cat "${LOCAL_RESULTS}/edge1_gogc100/vmhwm_bytes.txt" 2>/dev/null || echo 0)
+if [[ "${_valid_peak:-0}" -gt 0 ]]; then
+  _valid_gml=$(awk -v p="$_valid_peak" -v o="${OFFSET:-0}" -v h="$VALID_H" 'BEGIN{g=(p-o)*h; printf "%d", (g>0?g:0)}')
+  _valid_box=$(cgroup_for "$_valid_gml")
+  run_arm "valid_recommended" "100" "$_valid_gml" "$_valid_box"
+else
+  log "skipping recommended-config validation: no GOGC=100 Edge-1 loaded peak (include 100 in GOGC_ARMS)"
+fi
 
 # --- Hard-OOM demo: cgroup just above the build high-water, NO GOMEMLIMIT, GOGC=100.
 #     Demonstrates why the soft GOMEMLIMIT backstop is needed. ---
@@ -173,7 +182,7 @@ emit_tables() {
 
     printf '\n## Validation\n\n'
     printf '| Arm | cgroup | RSS peak | GC CPU%% | Max RPS | Sust RPS | p99@sust (ms) | stalls/gaps | outcome |\n|---|--:|--:|--:|--:|--:|--:|--:|---|\n'
-    _row "valid_caploose_gogc${VALID_GOGC}" "GOGC=${VALID_GOGC}, GOMEMLIMIT=2R" "$_valid_box"
+    [[ -n "${_valid_box:-}" ]] && _row "valid_recommended" "GOGC=100, GOMEMLIMIT=${VALID_H}(peak-O)" "$_valid_box"
     _row "oom_demo_nolimit" "GOGC=100, no GOMEMLIMIT" "$_oom_box"
   } > "$out"
   log "Summary table: ${out}"
